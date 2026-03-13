@@ -6,8 +6,8 @@ import (
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// CreateVault creates a new vault.
-func (s *VaultsService) CreateVault(ctx context.Context, name string, description string) (*Vault, error) {
+// Create creates a new vault.
+func (s *VaultsService) Create(ctx context.Context, name string, description string) (*Vault, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -25,8 +25,8 @@ func (s *VaultsService) CreateVault(ctx context.Context, name string, descriptio
 	return vaultFromAPI(resp), nil
 }
 
-// ListVaults lists vaults for the current user/org.
-func (s *VaultsService) ListVaults(ctx context.Context) (*VaultList, error) {
+// List lists vaults for the current user/org.
+func (s *VaultsService) List(ctx context.Context) (*VaultList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -38,8 +38,8 @@ func (s *VaultsService) ListVaults(ctx context.Context) (*VaultList, error) {
 	return vaultListFromAPI(resp), nil
 }
 
-// GetVault retrieves a vault by ID.
-func (s *VaultsService) GetVault(ctx context.Context, vaultID string) (*Vault, error) {
+// Get retrieves a vault by ID.
+func (s *VaultsService) Get(ctx context.Context, vaultID string) (*Vault, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -51,8 +51,8 @@ func (s *VaultsService) GetVault(ctx context.Context, vaultID string) (*Vault, e
 	return vaultFromAPI(resp), nil
 }
 
-// DeleteVault deletes a vault.
-func (s *VaultsService) DeleteVault(ctx context.Context, vaultID string) error {
+// Delete deletes a vault.
+func (s *VaultsService) Delete(ctx context.Context, vaultID string) error {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return err

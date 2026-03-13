@@ -6,8 +6,8 @@ import (
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// ApiKeyToken exchanges a user API key for a JWT. Use when you need to obtain a token manually.
-func (s *AuthService) ApiKeyToken(ctx context.Context, apiKey string) (*Token, error) {
+// APIKeyToken exchanges a user API key for a JWT. Use when you need to obtain a token manually.
+func (s *AuthService) APIKeyToken(ctx context.Context, apiKey string) (*Token, error) {
 	resp, _, err := s.client.api.AuthenticationAPI.ApiKeyToken(ctx).
 		UserApiKeyTokenRequest(openapi.UserApiKeyTokenRequest{ApiKey: apiKey}).
 		Execute()
@@ -39,8 +39,8 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Login
 	return loginResultFromAPI(resp), nil
 }
 
-// GetMe returns the current user profile. Requires an authenticated context.
-func (s *AuthService) GetMe(ctx context.Context) (*UserProfile, error) {
+// Me returns the current user profile. Requires an authenticated context.
+func (s *AuthService) Me(ctx context.Context) (*UserProfile, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err

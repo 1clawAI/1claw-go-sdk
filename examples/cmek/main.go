@@ -42,14 +42,14 @@ func main() {
 		return
 	}
 
-	_, err = client.Secrets.PutSecret(ctx, vaultID, "cmek/encrypted", encrypted, "generic")
+	_, err = client.Secrets.Put(ctx, vaultID, "cmek/encrypted", encrypted, "generic")
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Stored encrypted secret")
 
 	// Retrieve and decrypt
-	secret, err := client.Secrets.GetSecret(ctx, vaultID, "cmek/encrypted")
+	secret, err := client.Secrets.Get(ctx, vaultID, "cmek/encrypted")
 	if err != nil {
 		log.Fatal(err)
 	}

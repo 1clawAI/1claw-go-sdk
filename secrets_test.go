@@ -27,9 +27,9 @@ func TestSecretsService_GetSecret(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := client.Secrets.GetSecret(context.Background(), "v1", "db/creds")
+	resp, err := client.Secrets.Get(context.Background(), "v1", "db/creds")
 	if err != nil {
-		t.Fatalf("GetSecret error = %v", err)
+		t.Fatalf("Get error = %v", err)
 	}
 	if resp == nil || resp.Value != "secret123" {
 		t.Errorf("resp = %+v", resp)
@@ -63,9 +63,9 @@ func TestSecretsService_PutSecret(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := client.Secrets.PutSecret(context.Background(), "v1", "key", "my-secret", "api_key")
+	resp, err := client.Secrets.Put(context.Background(), "v1", "key", "my-secret", "api_key")
 	if err != nil {
-		t.Fatalf("PutSecret error = %v", err)
+		t.Fatalf("Put error = %v", err)
 	}
 	if resp == nil {
 		t.Error("resp is nil")

@@ -2,46 +2,57 @@ package oneclaw
 
 import (
 	"context"
-
-	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// CreatePolicy creates an access policy on a vault.
-func (s *AccessService) CreatePolicy(ctx context.Context, vaultID string, req openapi.CreatePolicyRequest) (*openapi.PolicyResponse, error) {
+// Create creates an access policy on a vault.
+func (s *AccessService) Create(ctx context.Context, vaultID string, req CreatePolicyParams) (*Policy, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	apiReq := createPolicyParamsToAPI(req)
 	resp, _, err := s.client.api.PoliciesAPI.CreatePolicy(authCtx, vaultID).
-		CreatePolicyRequest(req).
+		CreatePolicyRequest(apiReq).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	p := policyFromAPI(resp)
+	return &p, nil
 }
 
-// ListPolicies lists policies on a vault.
-func (s *AccessService) ListPolicies(ctx context.Context, vaultID string) (*openapi.PolicyListResponse, error) {
+// List lists policies on a vault.
+func (s *AccessService) List(ctx context.Context, vaultID string) (*PolicyList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.PoliciesAPI.ListPolicies(authCtx, vaultID).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return policyListFromAPI(resp), nil
 }
 
-// UpdatePolicy updates a policy.
-func (s *AccessService) UpdatePolicy(ctx context.Context, vaultID, policyID string, req openapi.UpdatePolicyRequest) (*openapi.PolicyResponse, error) {
+// Update updates a policy.
+func (s *AccessService) Update(ctx context.Context, vaultID, policyID string, req UpdatePolicyParams) (*Policy, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	apiReq := updatePolicyParamsToAPI(req)
 	resp, _, err := s.client.api.PoliciesAPI.UpdatePolicy(authCtx, vaultID, policyID).
-		UpdatePolicyRequest(req).
+		UpdatePolicyRequest(apiReq).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	p := policyFromAPI(resp)
+	return &p, nil
 }
 
-// DeletePolicy deletes a policy.
-func (s *AccessService) DeletePolicy(ctx context.Context, vaultID, policyID string) error {
+// Delete deletes a policy.
+func (s *AccessService) Delete(ctx context.Context, vaultID, policyID string) error {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return err

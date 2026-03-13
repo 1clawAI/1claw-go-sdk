@@ -2,44 +2,53 @@ package oneclaw
 
 import (
 	"context"
-
-	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// CreateShare creates a share link for a secret.
-func (s *SharingService) CreateShare(ctx context.Context, secretID string, req openapi.CreateShareRequest) (*openapi.ShareResponse, error) {
+// Create creates a share link for a secret.
+func (s *SharingService) Create(ctx context.Context, secretID string, req CreateShareParams) (*Share, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	apiReq := createShareParamsToAPI(req)
 	resp, _, err := s.client.api.SharingAPI.CreateShare(authCtx, secretID).
-		CreateShareRequest(req).
+		CreateShareRequest(apiReq).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	sh := shareFromAPI(resp)
+	return &sh, nil
 }
 
-// ListOutboundShares lists shares you have sent.
-func (s *SharingService) ListOutboundShares(ctx context.Context) (*openapi.ShareListResponse, error) {
+// ListOutbound lists shares you have sent.
+func (s *SharingService) ListOutbound(ctx context.Context) (*ShareList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.SharingAPI.ListOutboundShares(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return shareListFromAPI(resp), nil
 }
 
-// ListInboundShares lists shares sent to you.
-func (s *SharingService) ListInboundShares(ctx context.Context) (*openapi.ShareListResponse, error) {
+// ListInbound lists shares sent to you.
+func (s *SharingService) ListInbound(ctx context.Context) (*ShareList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.SharingAPI.ListInboundShares(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return shareListFromAPI(resp), nil
 }
 
-// RevokeShare revokes a share link.
-func (s *SharingService) RevokeShare(ctx context.Context, shareID string) error {
+// Revoke revokes a share link.
+func (s *SharingService) Revoke(ctx context.Context, shareID string) error {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return err

@@ -34,9 +34,9 @@ func TestVaultsService_ListVaults(t *testing.T) {
 		t.Fatalf("New error = %v", err)
 	}
 
-	resp, err := client.Vaults.ListVaults(context.Background())
+	resp, err := client.Vaults.List(context.Background())
 	if err != nil {
-		t.Fatalf("ListVaults error = %v", err)
+		t.Fatalf("List error = %v", err)
 	}
 	if resp == nil || len(resp.Vaults) != 1 {
 		t.Errorf("resp = %+v", resp)
@@ -68,9 +68,9 @@ func TestVaultsService_CreateVault(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := client.Vaults.CreateVault(context.Background(), "test-vault", "")
+	resp, err := client.Vaults.Create(context.Background(), "test-vault", "")
 	if err != nil {
-		t.Fatalf("CreateVault error = %v", err)
+		t.Fatalf("Create error = %v", err)
 	}
 	if resp == nil || resp.ID != "v-new" {
 		t.Errorf("resp = %+v", resp)

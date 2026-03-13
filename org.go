@@ -2,42 +2,52 @@ package oneclaw
 
 import (
 	"context"
-
-	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// ListOrgMembers lists organization members.
-func (s *OrgService) ListOrgMembers(ctx context.Context) (*openapi.OrgMemberListResponse, error) {
+// ListMembers lists organization members.
+func (s *OrgService) ListMembers(ctx context.Context) (*OrgMemberList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.OrganizationAPI.ListOrgMembers(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return orgMemberListFromAPI(resp), nil
 }
 
 // InviteMember invites a member by email.
-func (s *OrgService) InviteMember(ctx context.Context, req openapi.InviteMemberRequest) (*openapi.InviteMemberResponse, error) {
+func (s *OrgService) InviteMember(ctx context.Context, req InviteMemberParams) (*InviteMemberResult, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	apiReq := inviteMemberParamsToAPI(req)
 	resp, _, err := s.client.api.OrganizationAPI.InviteMember(authCtx).
-		InviteMemberRequest(req).
+		InviteMemberRequest(apiReq).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return inviteMemberResultFromAPI(resp), nil
 }
 
 // UpdateMemberRole updates a member's role.
-func (s *OrgService) UpdateMemberRole(ctx context.Context, userID string, req openapi.UpdateMemberRoleRequest) (*openapi.OrgMemberResponse, error) {
+func (s *OrgService) UpdateMemberRole(ctx context.Context, userID string, req UpdateMemberRoleParams) (*OrgMember, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	apiReq := updateMemberRoleParamsToAPI(req)
 	resp, _, err := s.client.api.OrganizationAPI.UpdateMemberRole(authCtx, userID).
-		UpdateMemberRoleRequest(req).
+		UpdateMemberRoleRequest(apiReq).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	m := orgMemberFromAPI(resp)
+	return &m, nil
 }
 
 // RemoveMember removes a member from the organization.

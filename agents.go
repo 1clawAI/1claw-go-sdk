@@ -4,8 +4,8 @@ import (
 	"context"
 )
 
-// CreateAgent creates a new agent.
-func (s *AgentsService) CreateAgent(ctx context.Context, req CreateAgentParams) (*AgentCreated, error) {
+// Create creates a new agent.
+func (s *AgentsService) Create(ctx context.Context, req CreateAgentParams) (*AgentCreated, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -20,8 +20,8 @@ func (s *AgentsService) CreateAgent(ctx context.Context, req CreateAgentParams) 
 	return agentCreatedFromAPI(resp), nil
 }
 
-// GetAgent retrieves an agent by ID.
-func (s *AgentsService) GetAgent(ctx context.Context, agentID string) (*Agent, error) {
+// Get retrieves an agent by ID.
+func (s *AgentsService) Get(ctx context.Context, agentID string) (*Agent, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -34,8 +34,8 @@ func (s *AgentsService) GetAgent(ctx context.Context, agentID string) (*Agent, e
 	return &a, nil
 }
 
-// ListAgents lists agents.
-func (s *AgentsService) ListAgents(ctx context.Context) (*AgentList, error) {
+// List lists agents.
+func (s *AgentsService) List(ctx context.Context) (*AgentList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -47,8 +47,8 @@ func (s *AgentsService) ListAgents(ctx context.Context) (*AgentList, error) {
 	return agentListFromAPI(resp), nil
 }
 
-// UpdateAgent updates an agent.
-func (s *AgentsService) UpdateAgent(ctx context.Context, agentID string, req UpdateAgentParams) (*Agent, error) {
+// Update updates an agent.
+func (s *AgentsService) Update(ctx context.Context, agentID string, req UpdateAgentParams) (*Agent, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -64,8 +64,8 @@ func (s *AgentsService) UpdateAgent(ctx context.Context, agentID string, req Upd
 	return &a, nil
 }
 
-// DeleteAgent deletes an agent.
-func (s *AgentsService) DeleteAgent(ctx context.Context, agentID string) error {
+// Delete deletes an agent.
+func (s *AgentsService) Delete(ctx context.Context, agentID string) error {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return err

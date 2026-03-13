@@ -60,9 +60,9 @@ func TestRetryTransport_RetriesOn5xx(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err = client.Vaults.ListVaults(ctx)
+	_, err = client.Vaults.List(ctx)
 	if err != nil {
-		t.Fatalf("ListVaults error = %v", err)
+		t.Fatalf("List error = %v", err)
 	}
 	if attempts != 2 {
 		t.Errorf("attempts = %d, want 2", attempts)

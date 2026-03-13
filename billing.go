@@ -2,26 +2,30 @@ package oneclaw
 
 import (
 	"context"
-
-	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// GetSubscription returns subscription, usage, and credit summary.
-func (s *BillingService) GetSubscription(ctx context.Context) (*openapi.SubscriptionResponse, error) {
+// Subscription returns subscription, usage, and credit summary.
+func (s *BillingService) Subscription(ctx context.Context) (*Subscription, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.BillingAPI.BillingSubscription(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return subscriptionFromAPI(resp), nil
 }
 
-// GetCreditBalance returns credit balance.
-func (s *BillingService) GetCreditBalance(ctx context.Context) (*openapi.CreditBalanceResponse, error) {
+// CreditBalance returns credit balance.
+func (s *BillingService) CreditBalance(ctx context.Context) (*CreditBalance, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.BillingAPI.BillingCreditBalance(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return creditBalanceFromAPI(resp), nil
 }

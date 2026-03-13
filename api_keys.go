@@ -6,8 +6,8 @@ import (
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// CreateAPIKey creates a personal API key.
-func (s *APIKeysService) CreateAPIKey(ctx context.Context, name string, scopes []string) (*APIKeyCreated, error) {
+// Create creates a personal API key.
+func (s *APIKeysService) Create(ctx context.Context, name string, scopes []string) (*APIKeyCreated, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -25,8 +25,8 @@ func (s *APIKeysService) CreateAPIKey(ctx context.Context, name string, scopes [
 	return apiKeyCreatedFromAPI(resp), nil
 }
 
-// ListAPIKeys lists personal API keys.
-func (s *APIKeysService) ListAPIKeys(ctx context.Context) (*APIKeyList, error) {
+// List lists personal API keys.
+func (s *APIKeysService) List(ctx context.Context) (*APIKeyList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -38,8 +38,8 @@ func (s *APIKeysService) ListAPIKeys(ctx context.Context) (*APIKeyList, error) {
 	return apiKeyListFromAPI(resp), nil
 }
 
-// RevokeAPIKey revokes an API key.
-func (s *APIKeysService) RevokeAPIKey(ctx context.Context, keyID string) error {
+// Revoke revokes an API key.
+func (s *APIKeysService) Revoke(ctx context.Context, keyID string) error {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return err

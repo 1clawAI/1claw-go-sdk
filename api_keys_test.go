@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestAPIKeysService_ListAPIKeys(t *testing.T) {
+func TestAPIKeysService_List(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/auth/api-keys" || r.Method != http.MethodGet {
 			t.Errorf("path=%s method=%s", r.URL.Path, r.Method)
@@ -28,9 +28,9 @@ func TestAPIKeysService_ListAPIKeys(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := client.APIKeys.ListAPIKeys(context.Background())
+	resp, err := client.APIKeys.List(context.Background())
 	if err != nil {
-		t.Fatalf("ListAPIKeys error = %v", err)
+		t.Fatalf("List error = %v", err)
 	}
 	if resp == nil || len(resp.Keys) != 1 {
 		t.Errorf("resp = %+v", resp)

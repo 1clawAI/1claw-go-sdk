@@ -32,16 +32,16 @@ func main() {
     ctx := context.Background()
 
     // List vaults
-    vaults, err := client.Vaults.ListVaults(ctx)
+    vaults, err := client.Vaults.List(ctx)
     if err != nil {
         log.Fatal(err)
     }
 
     // Get a secret
-    secret, err := client.Secrets.GetSecret(ctx, "vault-id", "path/to/secret")
+    secret, err := client.Secrets.Get(ctx, "vault-id", "path/to/secret")
 
     // Create an API key
-    created, err := client.APIKeys.CreateAPIKey(ctx, "my-key", []string{"vault:read"})
+    created, err := client.APIKeys.Create(ctx, "my-key", []string{"vault:read"})
 }
 ```
 
@@ -72,17 +72,17 @@ client, _ := oneclaw.New(
 
 | Resource | Methods |
 |----------|---------|
-| `client.Auth` | ApiKeyToken, AgentToken, Login, GetMe |
+| `client.Auth` | APIKeyToken, AgentToken, Login, Me |
 | `client.Vaults` | Create, List, Get, Delete |
 | `client.Secrets` | Put, Get, Delete, List |
 | `client.Agents` | Create, Get, List, Update, Delete |
 | `client.APIKeys` | Create, List, Revoke |
-| `client.Sharing` | CreateShare, ListOutbound, ListInbound, Revoke |
-| `client.Access` | CreatePolicy, ListPolicies, UpdatePolicy, DeletePolicy |
+| `client.Sharing` | Create, ListOutbound, ListInbound, Revoke |
+| `client.Access` | Create, List, Update, Delete |
 | `client.Org` | ListMembers, InviteMember, UpdateMemberRole, RemoveMember |
 | `client.Chains` | List, Get |
-| `client.Billing` | GetSubscription, GetCreditBalance |
-| `client.Audit` | QueryAuditEvents |
+| `client.Billing` | Subscription, CreditBalance |
+| `client.Audit` | Query |
 | `client.X402` | Payment protocol (X402Signer interface) |
 
 ## CMEK (Customer-Managed Encryption Keys)
@@ -98,10 +98,10 @@ fingerprint := cmek.Fingerprint(key)
 
 // Encrypt before storing
 encrypted, _ := cmek.Encrypt(key, "my-secret")
-client.Secrets.PutSecret(ctx, vaultID, "path", encrypted, "generic")
+client.Secrets.Put(ctx, vaultID, "path", encrypted, "generic")
 
 // Decrypt after retrieving
-secret, _ := client.Secrets.GetSecret(ctx, vaultID, "path")
+secret, _ := client.Secrets.Get(ctx, vaultID, "path")
 plaintext, _ := cmek.Decrypt(key, secret.Value)
 ```
 

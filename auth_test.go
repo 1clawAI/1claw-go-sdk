@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
+	"github.com/1clawAI/1claw-go-sdk/internal/testutil"
 )
 
 func TestAuth_ApiKeyToken_Success(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/auth/api-key-token" {
 			t.Errorf("path = %q, want /v1/auth/api-key-token", r.URL.Path)
 		}
@@ -29,15 +29,9 @@ func TestAuth_ApiKeyToken_Success(t *testing.T) {
 		if req.APIKey != "ocv_test_key" {
 			t.Errorf("api_key = %q, want ocv_test_key", req.APIKey)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"access_token": "eyJ.test.jwt",
-			"token_type":   "Bearer",
-			"expires_in":   3600,
-		})
+		body := testutil.LoadJSON(t, "testdata/auth/api_key_token_success.json")
+		testutil.WriteJSON(t, w, http.StatusOK, body)
 	}))
-	defer server.Close()
 
 	client, err := New(
 		WithBaseURL(server.URL),
@@ -58,7 +52,7 @@ func TestAuth_ApiKeyToken_Success(t *testing.T) {
 }
 
 func TestAuth_AgentToken_Success(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/auth/agent-token" {
 			t.Errorf("path = %q, want /v1/auth/agent-token", r.URL.Path)
 		}
@@ -73,14 +67,11 @@ func TestAuth_AgentToken_Success(t *testing.T) {
 		if req.AgentID != "agent-123" || req.APIKey != "ocv_agent_key" {
 			t.Errorf("agent_id=%q api_key=%q", req.AgentID, req.APIKey)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		testutil.WriteJSON(t, w, http.StatusOK, map[string]interface{}{
 			"access_token": "eyJ.agent.jwt",
 			"token_type":   "Bearer",
 		})
 	}))
-	defer server.Close()
 
 	client, err := New(
 		WithBaseURL(server.URL),
@@ -102,15 +93,10 @@ func TestAuth_AgentToken_Success(t *testing.T) {
 }
 
 func TestAuth_ApiKeyToken_401(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{
-			"title":  "Unauthorized",
-			"detail": "Invalid API key",
-		})
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := testutil.LoadJSON(t, "testdata/auth/api_key_token_401.json")
+		testutil.WriteJSON(t, w, http.StatusUnauthorized, body)
 	}))
-	defer server.Close()
 
 	client, err := New(
 		WithBaseURL(server.URL),

@@ -29,7 +29,7 @@ func TestResourceParity_Chains(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := client.Chains.ListChains(context.Background())
+	resp, err := client.Chains.List(context.Background())
 	if err != nil {
 		t.Fatalf("ListChains error = %v", err)
 	}
@@ -56,7 +56,7 @@ func TestResourceParity_Sharing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := client.Sharing.ListOutboundShares(context.Background())
+	resp, err := client.Sharing.ListOutbound(context.Background())
 	if err != nil {
 		t.Fatalf("ListOutboundShares error = %v", err)
 	}

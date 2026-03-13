@@ -6,8 +6,8 @@ import (
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// PutSecret creates or updates a secret.
-func (s *SecretsService) PutSecret(ctx context.Context, vaultID, path, value string, secretType string) (*SecretMetadata, error) {
+// Put creates or updates a secret.
+func (s *SecretsService) Put(ctx context.Context, vaultID, path, value string, secretType string) (*SecretMetadata, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -26,8 +26,8 @@ func (s *SecretsService) PutSecret(ctx context.Context, vaultID, path, value str
 	return &sm, nil
 }
 
-// GetSecret retrieves a decrypted secret.
-func (s *SecretsService) GetSecret(ctx context.Context, vaultID, path string) (*Secret, error) {
+// Get retrieves a decrypted secret.
+func (s *SecretsService) Get(ctx context.Context, vaultID, path string) (*Secret, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -39,8 +39,8 @@ func (s *SecretsService) GetSecret(ctx context.Context, vaultID, path string) (*
 	return secretFromAPI(resp), nil
 }
 
-// DeleteSecret deletes a secret.
-func (s *SecretsService) DeleteSecret(ctx context.Context, vaultID, path string) error {
+// Delete deletes a secret.
+func (s *SecretsService) Delete(ctx context.Context, vaultID, path string) error {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return err
@@ -49,8 +49,8 @@ func (s *SecretsService) DeleteSecret(ctx context.Context, vaultID, path string)
 	return wrapAPIError(err)
 }
 
-// ListSecrets lists secrets in a vault.
-func (s *SecretsService) ListSecrets(ctx context.Context, vaultID string) (*SecretList, error) {
+// List lists secrets in a vault.
+func (s *SecretsService) List(ctx context.Context, vaultID string) (*SecretList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err

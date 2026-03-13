@@ -23,7 +23,7 @@ func main() {
 	ctx := context.Background()
 
 	// List vaults
-	vaults, err := client.Vaults.ListVaults(ctx)
+	vaults, err := client.Vaults.List(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
