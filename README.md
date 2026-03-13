@@ -2,9 +2,32 @@
 
 Go SDK for **1Claw Vault** — HSM-backed secret management for AI agents and humans.
 
+## Quick Start
+
+```go
+import "github.com/1clawAI/1claw-go-sdk"
+
+client, err := oneclaw.New(
+    oneclaw.WithBaseURL("https://api.1claw.xyz"),
+    oneclaw.WithAPIKey("ocv_..."),  // auto-exchanges for JWT
+)
+if err != nil {
+    log.Fatal(err)
+}
+
+// List vaults
+vaults, err := client.Vaults.ListVaults(ctx)
+
+// Get a secret
+secret, err := client.Secrets.GetSecret(ctx, "vault-id", "path/to/secret")
+
+// Create an API key
+created, err := client.APIKeys.CreateAPIKey(ctx, "my-key", []string{"vault:read"})
+```
+
 ## Status
 
-Early development. See [milestones](.cursor/plans/go_sdk_milestones_688fb63f.plan.md) for the implementation plan.
+Early development. Core resources (Auth, Vaults, Secrets, Agents, APIKeys) implemented.
 
 ## Requirements
 

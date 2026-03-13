@@ -3,6 +3,8 @@ package oneclaw
 import (
 	"errors"
 	"fmt"
+
+	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
 // Common SDK errors. Use errors.Is to check.
@@ -48,4 +50,19 @@ func (e *APIError) Error() string {
 		msg += ": " + e.Detail
 	}
 	return fmt.Sprintf("1claw API error (status %d): %s", e.StatusCode, msg)
+}
+
+// wrapAPIError converts openapi errors to SDK errors.
+func wrapAPIError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if gerr, ok := err.(*openapi.GenericOpenAPIError); ok {
+		// Try to extract status from error string or body
+		return &APIError{
+			Message: gerr.Error(),
+			Body:    gerr.Body(),
+		}
+	}
+	return err
 }
