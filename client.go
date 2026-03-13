@@ -18,12 +18,19 @@ type Client struct {
 	apiKey    string
 	agentID   string
 
-	// Resource clients (wired in M3)
+	// Resource clients
 	Auth    *AuthService
 	Vaults  *VaultsService
 	Secrets *SecretsService
 	Agents  *AgentsService
 	APIKeys *APIKeysService
+	Sharing *SharingService
+	Access  *AccessService
+	Org     *OrgService
+	Chains  *ChainsService
+	Billing *BillingService
+	Audit   *AuditService
+	X402    *X402Service
 }
 
 // Option configures the Client.
@@ -138,6 +145,13 @@ func New(opts ...Option) (*Client, error) {
 	client.Secrets = &SecretsService{client: client}
 	client.Agents = &AgentsService{client: client}
 	client.APIKeys = &APIKeysService{client: client}
+	client.Sharing = &SharingService{client: client}
+	client.Access = &AccessService{client: client}
+	client.Org = &OrgService{client: client}
+	client.Chains = &ChainsService{client: client}
+	client.Billing = &BillingService{client: client}
+	client.Audit = &AuditService{client: client}
+	client.X402 = &X402Service{client: client}
 	return client, nil
 }
 
