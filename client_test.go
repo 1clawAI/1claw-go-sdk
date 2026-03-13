@@ -42,7 +42,10 @@ func TestNew_WithToken(t *testing.T) {
 		t.Fatalf("New(WithToken) error = %v", err)
 	}
 	ctx := context.Background()
-	authCtx := client.authContext(ctx)
+	authCtx, err := client.authContext(ctx)
+	if err != nil {
+		t.Fatalf("authContext error = %v", err)
+	}
 	if authCtx == nil {
 		t.Fatal("authContext returned nil")
 	}

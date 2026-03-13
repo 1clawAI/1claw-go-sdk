@@ -10,9 +10,10 @@ import (
 
 // Client is the 1Claw SDK client.
 type Client struct {
-	api    *openapi.APIClient
-	token  string
-	apiKey string
+	api     *openapi.APIClient
+	token   string
+	apiKey  string
+	agentID string
 
 	// Resource clients (wired in M3)
 	Auth    *AuthService
@@ -29,6 +30,7 @@ type config struct {
 	baseURL    string
 	token      string
 	apiKey     string
+	agentID    string
 	httpClient *http.Client
 	userAgent  string
 	debug      bool
@@ -52,6 +54,13 @@ func WithToken(token string) Option {
 func WithAPIKey(apiKey string) Option {
 	return func(c *config) {
 		c.apiKey = apiKey
+	}
+}
+
+// WithAgentID sets the agent ID for agent token flow. Use with WithAPIKey.
+func WithAgentID(agentID string) Option {
+	return func(c *config) {
+		c.agentID = agentID
 	}
 }
 
@@ -100,9 +109,10 @@ func New(opts ...Option) (*Client, error) {
 
 	api := openapi.NewAPIClient(openapiCfg)
 	client := &Client{
-		api:    api,
-		token:  cfg.token,
-		apiKey: cfg.apiKey,
+		api:     api,
+		token:   cfg.token,
+		apiKey:  cfg.apiKey,
+		agentID: cfg.agentID,
 	}
 	client.Auth = &AuthService{client: client}
 	client.Vaults = &VaultsService{client: client}
@@ -113,11 +123,13 @@ func New(opts ...Option) (*Client, error) {
 }
 
 // authContext returns a context with the bearer token injected for API calls.
-// Callers must use this context when invoking API methods.
-func (c *Client) authContext(ctx context.Context) context.Context {
-	if c.token != "" {
-		return context.WithValue(ctx, openapi.ContextAccessToken, c.token)
+// Exchanges API key for JWT if needed. Callers must use this context when invoking API methods.
+func (c *Client) authContext(ctx context.Context) (context.Context, error) {
+	if err := c.ensureToken(ctx); err != nil {
+		return nil, err
 	}
-	// API key exchange happens in auth layer (M2); for M1 we only support token
-	return ctx
+	if c.token != "" {
+		return context.WithValue(ctx, openapi.ContextAccessToken, c.token), nil
+	}
+	return ctx, nil
 }
