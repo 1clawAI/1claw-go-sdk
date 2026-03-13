@@ -4,16 +4,19 @@ package oneclaw
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
 // Client is the 1Claw SDK client.
 type Client struct {
-	api     *openapi.APIClient
-	token   string
-	apiKey  string
-	agentID string
+	api       *openapi.APIClient
+	token     string
+	refreshToken string
+	tokenExpiry time.Time
+	apiKey    string
+	agentID   string
 
 	// Resource clients (wired in M3)
 	Auth    *AuthService
@@ -93,9 +96,22 @@ func New(opts ...Option) (*Client, error) {
 	}
 
 	openapiCfg := openapi.NewConfiguration()
-	if cfg.httpClient != nil {
-		openapiCfg.HTTPClient = cfg.httpClient
+	baseTransport := http.DefaultTransport
+	if cfg.httpClient != nil && cfg.httpClient.Transport != nil {
+		baseTransport = cfg.httpClient.Transport
 	}
+	httpClient := &http.Client{
+		Transport: &idempotencyTransport{
+			inner: &retryTransport{
+				inner:      baseTransport,
+				maxRetries: 2,
+			},
+		},
+	}
+	if cfg.httpClient != nil {
+		httpClient.Timeout = cfg.httpClient.Timeout
+	}
+	openapiCfg.HTTPClient = httpClient
 	if cfg.userAgent != "" {
 		openapiCfg.UserAgent = cfg.userAgent
 	}
@@ -113,6 +129,9 @@ func New(opts ...Option) (*Client, error) {
 		token:   cfg.token,
 		apiKey:  cfg.apiKey,
 		agentID: cfg.agentID,
+	}
+	if cfg.token != "" {
+		client.tokenExpiry = time.Now().Add(24 * time.Hour) // assume long-lived when passed directly
 	}
 	client.Auth = &AuthService{client: client}
 	client.Vaults = &VaultsService{client: client}

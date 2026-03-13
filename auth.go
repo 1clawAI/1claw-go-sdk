@@ -6,14 +6,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
-// ensureToken exchanges API key for JWT if needed. Call before authenticated requests.
+// refreshThreshold is how long before expiry we refresh the token.
+const refreshThreshold = 60 * time.Second
+
+// ensureToken exchanges API key for JWT if needed, or refreshes when close to expiry.
 func (c *Client) ensureToken(ctx context.Context) error {
-	if c.token != "" {
+	if c.token != "" && time.Now().Add(refreshThreshold).Before(c.tokenExpiry) {
 		return nil
+	}
+	if c.refreshToken != "" {
+		if err := c.refreshAccessToken(ctx); err == nil {
+			return nil
+		}
+		// Refresh failed, clear and fall through to re-exchange
+		c.refreshToken = ""
 	}
 	if c.apiKey == "" {
 		return fmt.Errorf("no token or API key configured")
@@ -35,6 +46,30 @@ func (c *Client) exchangeAPIKeyToken(ctx context.Context) error {
 		return c.wrapAuthError(err, httpResp)
 	}
 	c.token = resp.AccessToken
+	if resp.ExpiresIn != nil {
+		c.tokenExpiry = time.Now().Add(time.Duration(*resp.ExpiresIn) * time.Second)
+	}
+	if resp.RefreshToken != nil {
+		c.refreshToken = *resp.RefreshToken
+	}
+	return nil
+}
+
+func (c *Client) refreshAccessToken(ctx context.Context) error {
+	req := openapi.RefreshTokenRequest{RefreshToken: c.refreshToken}
+	resp, httpResp, err := c.api.AuthenticationAPI.RefreshToken(ctx).
+		RefreshTokenRequest(req).
+		Execute()
+	if err != nil {
+		return c.wrapAuthError(err, httpResp)
+	}
+	c.token = resp.AccessToken
+	if resp.ExpiresIn != nil {
+		c.tokenExpiry = time.Now().Add(time.Duration(*resp.ExpiresIn) * time.Second)
+	}
+	if resp.RefreshToken != nil {
+		c.refreshToken = *resp.RefreshToken
+	}
 	return nil
 }
 
@@ -50,6 +85,9 @@ func (c *Client) exchangeAgentToken(ctx context.Context) error {
 		return c.wrapAuthError(err, httpResp)
 	}
 	c.token = resp.AccessToken
+	if resp.ExpiresIn != nil {
+		c.tokenExpiry = time.Now().Add(time.Duration(*resp.ExpiresIn) * time.Second)
+	}
 	return nil
 }
 

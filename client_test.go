@@ -66,14 +66,18 @@ func TestNew_WithAPIKey(t *testing.T) {
 }
 
 func TestNew_WithHTTPClient(t *testing.T) {
-	custom := &http.Client{}
+	custom := &http.Client{Transport: http.DefaultTransport}
 	client, err := New(WithHTTPClient(custom))
 	if err != nil {
 		t.Fatalf("New(WithHTTPClient) error = %v", err)
 	}
 	cfg := client.api.GetConfig()
-	if cfg.HTTPClient != custom {
+	if cfg.HTTPClient == nil {
 		t.Error("HTTPClient not set")
+	}
+	// Client wraps custom transport with retry/idempotency
+	if cfg.HTTPClient.Transport == nil {
+		t.Error("HTTPClient.Transport not set")
 	}
 }
 
