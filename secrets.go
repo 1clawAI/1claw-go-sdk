@@ -7,7 +7,7 @@ import (
 )
 
 // PutSecret creates or updates a secret.
-func (s *SecretsService) PutSecret(ctx context.Context, vaultID, path, value string, secretType string) (*openapi.SecretMetadataResponse, error) {
+func (s *SecretsService) PutSecret(ctx context.Context, vaultID, path, value string, secretType string) (*SecretMetadata, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -19,18 +19,24 @@ func (s *SecretsService) PutSecret(ctx context.Context, vaultID, path, value str
 	resp, _, err := s.client.api.SecretsAPI.PutSecret(authCtx, vaultID, path).
 		PutSecretRequest(req).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	sm := secretMetadataFromAPI(resp)
+	return &sm, nil
 }
 
-
 // GetSecret retrieves a decrypted secret.
-func (s *SecretsService) GetSecret(ctx context.Context, vaultID, path string) (*openapi.SecretResponse, error) {
+func (s *SecretsService) GetSecret(ctx context.Context, vaultID, path string) (*Secret, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.SecretsAPI.GetSecret(authCtx, vaultID, path).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return secretFromAPI(resp), nil
 }
 
 // DeleteSecret deletes a secret.
@@ -44,11 +50,14 @@ func (s *SecretsService) DeleteSecret(ctx context.Context, vaultID, path string)
 }
 
 // ListSecrets lists secrets in a vault.
-func (s *SecretsService) ListSecrets(ctx context.Context, vaultID string) (*openapi.SecretListResponse, error) {
+func (s *SecretsService) ListSecrets(ctx context.Context, vaultID string) (*SecretList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.SecretsAPI.ListSecrets(authCtx, vaultID).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return secretListFromAPI(resp), nil
 }

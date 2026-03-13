@@ -2,52 +2,66 @@ package oneclaw
 
 import (
 	"context"
-
-	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
 )
 
 // CreateAgent creates a new agent.
-func (s *AgentsService) CreateAgent(ctx context.Context, req openapi.CreateAgentRequest) (*openapi.AgentCreatedResponse, error) {
+func (s *AgentsService) CreateAgent(ctx context.Context, req CreateAgentParams) (*AgentCreated, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	apiReq := createAgentParamsToAPI(req)
 	resp, _, err := s.client.api.AgentsAPI.CreateAgent(authCtx).
-		CreateAgentRequest(req).
+		CreateAgentRequest(apiReq).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return agentCreatedFromAPI(resp), nil
 }
 
 // GetAgent retrieves an agent by ID.
-func (s *AgentsService) GetAgent(ctx context.Context, agentID string) (*openapi.AgentResponse, error) {
+func (s *AgentsService) GetAgent(ctx context.Context, agentID string) (*Agent, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.AgentsAPI.GetAgent(authCtx, agentID).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	a := agentFromAPI(resp)
+	return &a, nil
 }
 
 // ListAgents lists agents.
-func (s *AgentsService) ListAgents(ctx context.Context) (*openapi.AgentListResponse, error) {
+func (s *AgentsService) ListAgents(ctx context.Context) (*AgentList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.AgentsAPI.ListAgents(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return agentListFromAPI(resp), nil
 }
 
 // UpdateAgent updates an agent.
-func (s *AgentsService) UpdateAgent(ctx context.Context, agentID string, req openapi.UpdateAgentRequest) (*openapi.AgentResponse, error) {
+func (s *AgentsService) UpdateAgent(ctx context.Context, agentID string, req UpdateAgentParams) (*Agent, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	apiReq := updateAgentParamsToAPI(req)
 	resp, _, err := s.client.api.AgentsAPI.UpdateAgent(authCtx, agentID).
-		UpdateAgentRequest(req).
+		UpdateAgentRequest(apiReq).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	a := agentFromAPI(resp)
+	return &a, nil
 }
 
 // DeleteAgent deletes an agent.

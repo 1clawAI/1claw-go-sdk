@@ -7,7 +7,7 @@ import (
 )
 
 // CreateVault creates a new vault.
-func (s *VaultsService) CreateVault(ctx context.Context, name string, description string) (*openapi.VaultResponse, error) {
+func (s *VaultsService) CreateVault(ctx context.Context, name string, description string) (*Vault, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -19,27 +19,36 @@ func (s *VaultsService) CreateVault(ctx context.Context, name string, descriptio
 	resp, _, err := s.client.api.VaultsAPI.CreateVault(authCtx).
 		CreateVaultRequest(req).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return vaultFromAPI(resp), nil
 }
 
 // ListVaults lists vaults for the current user/org.
-func (s *VaultsService) ListVaults(ctx context.Context) (*openapi.VaultListResponse, error) {
+func (s *VaultsService) ListVaults(ctx context.Context) (*VaultList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.VaultsAPI.ListVaults(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return vaultListFromAPI(resp), nil
 }
 
 // GetVault retrieves a vault by ID.
-func (s *VaultsService) GetVault(ctx context.Context, vaultID string) (*openapi.VaultResponse, error) {
+func (s *VaultsService) GetVault(ctx context.Context, vaultID string) (*Vault, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.VaultsAPI.GetVault(authCtx, vaultID).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return vaultFromAPI(resp), nil
 }
 
 // DeleteVault deletes a vault.

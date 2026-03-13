@@ -29,7 +29,7 @@ func main() {
 	}
 	fmt.Printf("Vaults: %d\n", len(vaults.Vaults))
 	for _, v := range vaults.Vaults {
-		fmt.Printf("  - %s (%s)\n", v.Name, v.Id)
+		fmt.Printf("  - %s (%s)\n", v.Name, v.ID)
 	}
 
 	// Option 2: Pre-obtained JWT

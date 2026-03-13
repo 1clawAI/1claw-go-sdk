@@ -7,35 +7,47 @@ import (
 )
 
 // ApiKeyToken exchanges a user API key for a JWT. Use when you need to obtain a token manually.
-func (s *AuthService) ApiKeyToken(ctx context.Context, apiKey string) (*openapi.TokenResponse, error) {
+func (s *AuthService) ApiKeyToken(ctx context.Context, apiKey string) (*Token, error) {
 	resp, _, err := s.client.api.AuthenticationAPI.ApiKeyToken(ctx).
 		UserApiKeyTokenRequest(openapi.UserApiKeyTokenRequest{ApiKey: apiKey}).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return tokenFromAPI(resp), nil
 }
 
 // AgentToken exchanges agent credentials for a JWT.
-func (s *AuthService) AgentToken(ctx context.Context, agentID, apiKey string) (*openapi.TokenResponse, error) {
+func (s *AuthService) AgentToken(ctx context.Context, agentID, apiKey string) (*Token, error) {
 	resp, _, err := s.client.api.AuthenticationAPI.AgentToken(ctx).
 		AgentTokenRequest(openapi.AgentTokenRequest{AgentId: agentID, ApiKey: apiKey}).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return tokenFromAPI(resp), nil
 }
 
 // Login authenticates with email and password.
-func (s *AuthService) Login(ctx context.Context, email, password string) (*openapi.LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, email, password string) (*LoginResult, error) {
 	resp, _, err := s.client.api.AuthenticationAPI.Login(ctx).
 		LoginRequest(openapi.LoginRequest{Email: email, Password: password}).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return loginResultFromAPI(resp), nil
 }
 
 // GetMe returns the current user profile. Requires an authenticated context.
-func (s *AuthService) GetMe(ctx context.Context) (*openapi.UserProfileResponse, error) {
+func (s *AuthService) GetMe(ctx context.Context) (*UserProfile, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.AuthenticationAPI.GetMe(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return userProfileFromAPI(resp), nil
 }

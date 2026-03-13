@@ -7,7 +7,7 @@ import (
 )
 
 // CreateAPIKey creates a personal API key.
-func (s *APIKeysService) CreateAPIKey(ctx context.Context, name string, scopes []string) (*openapi.ApiKeyCreatedResponse, error) {
+func (s *APIKeysService) CreateAPIKey(ctx context.Context, name string, scopes []string) (*APIKeyCreated, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
@@ -19,17 +19,23 @@ func (s *APIKeysService) CreateAPIKey(ctx context.Context, name string, scopes [
 	resp, _, err := s.client.api.APIKeysAPI.CreateApiKey(authCtx).
 		CreateApiKeyRequest(req).
 		Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return apiKeyCreatedFromAPI(resp), nil
 }
 
 // ListAPIKeys lists personal API keys.
-func (s *APIKeysService) ListAPIKeys(ctx context.Context) (*openapi.ApiKeyListResponse, error) {
+func (s *APIKeysService) ListAPIKeys(ctx context.Context) (*APIKeyList, error) {
 	authCtx, err := s.client.authContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp, _, err := s.client.api.APIKeysAPI.ListApiKeys(authCtx).Execute()
-	return resp, wrapAPIError(err)
+	if err != nil {
+		return nil, wrapAPIError(err)
+	}
+	return apiKeyListFromAPI(resp), nil
 }
 
 // RevokeAPIKey revokes an API key.

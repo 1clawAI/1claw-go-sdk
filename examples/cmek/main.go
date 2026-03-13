@@ -53,7 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	decrypted, err := cmek.Decrypt(key, secret.Value)
+	decrypted, err := cmek.Decrypt(key, secret.Value) // Secret.Value is the decrypted value
 	if err != nil {
 		log.Fatal(err)
 	}

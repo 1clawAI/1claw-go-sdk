@@ -72,7 +72,7 @@ func TestVaultsService_CreateVault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateVault error = %v", err)
 	}
-	if resp == nil || resp.Id != "v-new" {
+	if resp == nil || resp.ID != "v-new" {
 		t.Errorf("resp = %+v", resp)
 	}
 }
