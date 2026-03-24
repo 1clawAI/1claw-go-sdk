@@ -377,3 +377,79 @@ type PaymentRequirement struct {
 	Accepts     []PaymentRequirementAccept
 	Description string
 }
+
+// --- Treasury types ---
+
+// TreasurySigner is a signer on a treasury Safe.
+type TreasurySigner struct {
+	ID            string
+	SignerType    string
+	SignerID      string
+	SignerAddress string
+	AddedAt       *time.Time
+}
+
+// Treasury is a treasury (Safe multisig) record.
+type Treasury struct {
+	ID          string
+	Name        string
+	SafeAddress string
+	Chain       string
+	ChainID     *int32
+	Threshold   *int32
+	CreatedBy   string
+	Signers     []TreasurySigner
+	CreatedAt   *time.Time
+}
+
+// TreasuryList is the response from listing treasuries.
+type TreasuryList struct {
+	Treasuries []Treasury
+}
+
+// CreateTreasurySignerEntry is a signer to attach when creating a treasury.
+type CreateTreasurySignerEntry struct {
+	SignerType    string
+	SignerID      string
+	SignerAddress string
+}
+
+// CreateTreasuryParams are parameters for creating a treasury.
+type CreateTreasuryParams struct {
+	Name        string
+	SafeAddress string
+	Chain       *string
+	ChainID     *int32
+	Threshold   *int32
+	Signers     []CreateTreasurySignerEntry
+}
+
+// UpdateTreasuryParams are parameters for patching a treasury (all fields optional).
+type UpdateTreasuryParams struct {
+	Name      *string
+	Threshold *int32
+}
+
+// TreasuryAccessRequest is an agent access request for a treasury.
+type TreasuryAccessRequest struct {
+	ID          string
+	TreasuryID  string
+	AgentID     string
+	Status      string
+	Reason      string
+	RequestedAt *time.Time
+	ResolvedBy  string
+	ResolvedAt  *time.Time
+}
+
+// TreasuryAccessRequestList is the response from listing access requests.
+type TreasuryAccessRequestList struct {
+	Requests []TreasuryAccessRequest
+}
+
+// AddTreasurySignerParams are parameters for adding a signer.
+type AddTreasurySignerParams struct {
+	SignerType    string
+	SignerID      string
+	SignerAddress string
+}

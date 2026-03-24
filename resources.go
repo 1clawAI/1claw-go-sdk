@@ -59,3 +59,8 @@ type AuditService struct {
 type X402Service struct {
 	client *Client
 }
+
+// TreasuryService provides treasury (Safe multisig) operations.
+type TreasuryService struct {
+	client *Client
+}

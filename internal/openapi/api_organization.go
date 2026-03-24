@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -23,6 +23,105 @@ import (
 
 // OrganizationAPIService OrganizationAPI service
 type OrganizationAPIService service
+
+type ApiGetAgentKeysVaultRequest struct {
+	ctx context.Context
+	ApiService *OrganizationAPIService
+}
+
+func (r ApiGetAgentKeysVaultRequest) Execute() (*AgentKeysVaultResponse, *http.Response, error) {
+	return r.ApiService.GetAgentKeysVaultExecute(r)
+}
+
+/*
+GetAgentKeysVault Get the org's __agent-keys vault id
+
+Returns the vault id for the caller's org agent-keys vault (used for revealing agent identity keys). Users only; 404 if the vault does not exist.
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @return ApiGetAgentKeysVaultRequest
+*/
+func (a *OrganizationAPIService) GetAgentKeysVault(ctx context.Context) ApiGetAgentKeysVaultRequest {
+	return ApiGetAgentKeysVaultRequest{
+		ApiService: a,
+		ctx: ctx,
+	}
+}
+
+// Execute executes the request
+//  @return AgentKeysVaultResponse
+func (a *OrganizationAPIService) GetAgentKeysVaultExecute(r ApiGetAgentKeysVaultRequest) (*AgentKeysVaultResponse, *http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodGet
+		localVarPostBody     interface{}
+		formFiles            []formFile
+		localVarReturnValue  *AgentKeysVaultResponse
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "OrganizationAPIService.GetAgentKeysVault")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/v1/org/agent-keys-vault"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
 
 type ApiInviteMemberRequest struct {
 	ctx context.Context

@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -42,7 +42,7 @@ var (
 	queryDescape    = strings.NewReplacer( "%5B", "[", "%5D", "]" )
 )
 
-// APIClient manages communication with the 1Claw API API v2.4.1
+// APIClient manages communication with the 1Claw API API v2.6.0
 // In most cases there should be only one, shared, APIClient.
 type APIClient struct {
 	cfg    *Configuration
@@ -80,6 +80,8 @@ type APIClient struct {
 
 	TransactionsAPI *TransactionsAPIService
 
+	TreasuryAPI *TreasuryAPIService
+
 	VaultsAPI *VaultsAPIService
 }
 
@@ -114,6 +116,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.SecurityAPI = (*SecurityAPIService)(&c.common)
 	c.SharingAPI = (*SharingAPIService)(&c.common)
 	c.TransactionsAPI = (*TransactionsAPIService)(&c.common)
+	c.TreasuryAPI = (*TreasuryAPIService)(&c.common)
 	c.VaultsAPI = (*VaultsAPIService)(&c.common)
 
 	return c

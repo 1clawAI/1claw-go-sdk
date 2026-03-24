@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -28,7 +28,7 @@ type TransactionResponse struct {
 	To *string `json:"to,omitempty"`
 	ValueWei *string `json:"value_wei,omitempty"`
 	Status *string `json:"status,omitempty"`
-	// Raw signed transaction hex. Omitted (null) by default to reduce exfiltration risk. Pass `include_signed_tx=true` query param on GET endpoints to include it. Always returned on the initial POST submission response. 
+	// Raw signed transaction hex. On GET list and GET by id, this property is omitted by default (absent from the response). Pass `include_signed_tx=true` on those endpoints to include it. Always present on the initial POST submit response. 
 	SignedTx *string `json:"signed_tx,omitempty"`
 	TxHash *string `json:"tx_hash,omitempty"`
 	ErrorMessage *string `json:"error_message,omitempty"`

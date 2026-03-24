@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 

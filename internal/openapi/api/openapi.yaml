@@ -1,0 +1,6776 @@
+openapi: 3.1.0
+info:
+  contact:
+    email: ops@1claw.xyz
+  description: |
+    Secure secret management for AI agents. Provides vaults, secrets,
+    policy-based access control, agent identity, Intents API,
+    sharing, billing, and audit logging.
+
+    All endpoints require JWT Bearer authentication unless marked with
+    `security: []`.
+  title: 1Claw API
+  version: 2.6.0
+servers:
+- description: Development
+  url: http://localhost:8443
+- description: Production
+  url: https://api.1claw.xyz
+- description: Shroud TEE Proxy (Intents API + LLM proxy)
+  url: https://shroud.1claw.xyz
+security:
+- BearerAuth: []
+tags:
+- description: "Credential exchange, MFA, device auth, token management"
+  name: Authentication
+- description: Personal API key management
+  name: API Keys
+- description: Vault lifecycle operations
+  name: Vaults
+- description: Secret CRUD within vaults
+  name: Secrets
+- description: Access policy management
+  name: Policies
+- description: Agent identity and key management
+  name: Agents
+- description: "Intents API (signing, simulation)"
+  name: Transactions
+- description: Blockchain chain registry
+  name: Chains
+- description: Secret sharing links
+  name: Sharing
+- description: Org membership and roles
+  name: Organization
+- description: "Subscriptions, credits, and usage"
+  name: Billing
+- description: Immutable audit event log
+  name: Audit
+- description: IP rules and security configuration
+  name: Security
+- description: Multi-sig treasury wallets (Safe) and agent access requests
+  name: Treasury
+- description: Platform administration
+  name: Admin
+- description: Service health checks
+  name: Health
+paths:
+  /v1/auth/token:
+    delete:
+      operationId: revokeToken
+      responses:
+        "204":
+          description: Token revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      summary: Revoke current token
+      tags:
+      - Authentication
+    post:
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+          description: Authenticated (or MFA required)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security: []
+      summary: Login with email and password
+      tags:
+      - Authentication
+  /v1/auth/agent-token:
+    post:
+      operationId: agentToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentTokenRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: Agent JWT issued
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security: []
+      summary: Exchange agent credentials for JWT
+      tags:
+      - Authentication
+  /v1/auth/api-key-token:
+    post:
+      operationId: apiKeyToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserApiKeyTokenRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: JWT issued
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security: []
+      summary: Exchange user API key for JWT
+      tags:
+      - Authentication
+  /v1/auth/refresh:
+    post:
+      operationId: refreshToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/refreshToken_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: Token refreshed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security: []
+      summary: Refresh an expiring JWT
+      tags:
+      - Authentication
+  /v1/auth/jwt-public-key:
+    get:
+      description: |
+        Returns the Ed25519 public key used to sign JWTs.
+        Use this to verify tokens independently (e.g. in a TEE proxy or
+        gateway). No authentication required.
+      operationId: getJwtPublicKey
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/getJwtPublicKey_200_response"
+          description: JWT public key
+      security: []
+      summary: Get JWT verification public key
+      tags:
+      - Authentication
+  /v1/auth/signup:
+    post:
+      operationId: signup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignupResponse"
+          description: Account created (pending verification or auto-login)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      security: []
+      summary: Create a new account
+      tags:
+      - Authentication
+  /v1/auth/verify-email:
+    post:
+      operationId: verifyEmail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/verifyEmail_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: Email verified
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      security: []
+      summary: Verify email address
+      tags:
+      - Authentication
+  /v1/auth/forgot-password:
+    post:
+      description: |
+        Always returns the same message whether or not the email exists (no account enumeration).
+        Only password-based accounts receive mail.
+      operationId: forgotPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForgotPasswordResponse"
+          description: Acknowledgement (check email if account exists)
+      security: []
+      summary: Request password reset email
+      tags:
+      - Authentication
+  /v1/auth/reset-password:
+    post:
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResetPasswordResponse"
+          description: Password updated
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      security: []
+      summary: Set a new password using reset token from email
+      tags:
+      - Authentication
+  /v1/auth/google:
+    post:
+      operationId: googleAuth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: Authenticated
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security: []
+      summary: Authenticate with Google OAuth
+      tags:
+      - Authentication
+  /v1/auth/change-password:
+    post:
+      operationId: changePassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: Password changed
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Change current user's password
+      tags:
+      - Authentication
+  /v1/auth/me:
+    delete:
+      operationId: deleteMe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/deleteMe_request"
+        required: true
+      responses:
+        "204":
+          description: Account deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Delete current user account
+      tags:
+      - Authentication
+    get:
+      operationId: getMe
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+          description: User profile
+      summary: Get current user profile
+      tags:
+      - Authentication
+    patch:
+      operationId: updateMe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+          description: Profile updated
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Update user profile
+      tags:
+      - Authentication
+  /v1/auth/mfa/status:
+    get:
+      operationId: mfaStatus
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaStatusResponse"
+          description: MFA status
+      summary: Check MFA enrollment status
+      tags:
+      - Authentication
+  /v1/auth/mfa/setup:
+    post:
+      operationId: mfaSetup
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaSetupResponse"
+          description: TOTP setup details
+      summary: Begin MFA enrollment
+      tags:
+      - Authentication
+  /v1/auth/mfa/verify-setup:
+    post:
+      operationId: mfaVerifySetup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaVerifySetupRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaVerifySetupResponse"
+          description: "MFA enabled, recovery codes returned"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Confirm MFA enrollment with a TOTP code
+      tags:
+      - Authentication
+  /v1/auth/mfa/verify:
+    post:
+      operationId: mfaVerify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaVerifyRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: "MFA verified, JWT issued"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security: []
+      summary: Verify MFA code during login
+      tags:
+      - Authentication
+  /v1/auth/mfa:
+    delete:
+      operationId: mfaDisable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaDisableRequest"
+        required: true
+      responses:
+        "204":
+          description: MFA disabled
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Disable MFA
+      tags:
+      - Authentication
+  /v1/auth/device/code:
+    post:
+      operationId: deviceCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceCodeRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceCodeResponse"
+          description: Device code issued
+      security: []
+      summary: Request a device authorization code
+      tags:
+      - Authentication
+  /v1/auth/device/token:
+    post:
+      operationId: deviceToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceTokenRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceTokenResponse"
+          description: Token issued or authorization pending
+      security: []
+      summary: Poll for device authorization token
+      tags:
+      - Authentication
+  /v1/auth/device/code/{user_code}:
+    get:
+      operationId: deviceCodeStatus
+      parameters:
+      - explode: false
+        in: path
+        name: user_code
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Device code details
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security: []
+      summary: Check device code status
+      tags:
+      - Authentication
+  /v1/auth/device/approve:
+    post:
+      operationId: deviceApprove
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceApproveRequest"
+        required: true
+      responses:
+        "200":
+          description: Device approved
+      summary: Approve a CLI device login
+      tags:
+      - Authentication
+  /v1/auth/device/deny:
+    post:
+      operationId: deviceDeny
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceApproveRequest"
+        required: true
+      responses:
+        "200":
+          description: Device denied
+      summary: Deny a CLI device login
+      tags:
+      - Authentication
+  /v1/auth/api-keys:
+    get:
+      operationId: listApiKeys
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyListResponse"
+          description: List of API keys (masked)
+      summary: List personal API keys
+      tags:
+      - API Keys
+    post:
+      operationId: createApiKey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApiKeyRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyCreatedResponse"
+          description: API key created (full key shown once)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Create a personal API key
+      tags:
+      - API Keys
+  /v1/auth/api-keys/{key_id}:
+    delete:
+      operationId: revokeApiKey
+      parameters:
+      - explode: false
+        in: path
+        name: key_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Key revoked
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Revoke an API key
+      tags:
+      - API Keys
+  /v1/vaults:
+    get:
+      operationId: listVaults
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaultListResponse"
+          description: List of vaults
+      summary: List vaults
+      tags:
+      - Vaults
+    post:
+      operationId: createVault
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVaultRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaultResponse"
+          description: Vault created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Create a vault
+      tags:
+      - Vaults
+  /v1/vaults/{vault_id}:
+    delete:
+      operationId: deleteVault
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      responses:
+        "204":
+          description: Vault deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Delete a vault
+      tags:
+      - Vaults
+    get:
+      operationId: getVault
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaultResponse"
+          description: Vault details
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Get vault details
+      tags:
+      - Vaults
+  /v1/vaults/{vault_id}/cmek:
+    delete:
+      description: |
+        Disable client-side encryption. Existing CMEK-encrypted secrets still require
+        the key to decrypt. New secrets will use HSM-only encryption.
+      operationId: disableCmek
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaultResponse"
+          description: CMEK disabled
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Disable CMEK on a vault
+      tags:
+      - CMEK
+    post:
+      description: |
+        Enable client-side encryption on a vault. Requires Business or Enterprise plan.
+        Only the key's SHA-256 fingerprint is stored — the key never touches the server.
+      operationId: enableCmek
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnableCmekRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaultResponse"
+          description: CMEK enabled
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      summary: Enable CMEK on a vault
+      tags:
+      - CMEK
+  /v1/vaults/{vault_id}/cmek-rotate:
+    post:
+      description: |
+        Re-encrypts all secrets from the old CMEK key to the new one.
+        Keys are passed in headers (TLS-only) and exist in server memory
+        only during the rotation. Batched in groups of 100 secrets.
+      operationId: rotateCmek
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - description: Base64-encoded old CMEK key (32 bytes)
+        explode: false
+        in: header
+        name: x-cmek-old-key
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Base64-encoded new CMEK key (32 bytes)
+        explode: false
+        in: header
+        name: x-cmek-new-key
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CmekRotateRequest"
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CmekRotationJobResponse"
+          description: Rotation job started
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Start server-assisted CMEK key rotation
+      tags:
+      - CMEK
+  /v1/vaults/{vault_id}/cmek-rotate/{job_id}:
+    get:
+      operationId: getCmekRotationJob
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - explode: false
+        in: path
+        name: job_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CmekRotationJobResponse"
+          description: Rotation job status
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Get CMEK rotation job status
+      tags:
+      - CMEK
+  /v1/vaults/{vault_id}/secrets:
+    get:
+      operationId: listSecrets
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - description: Filter by path prefix
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretListResponse"
+          description: Secret metadata list
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: List secrets in a vault
+      tags:
+      - Secrets
+  /v1/vaults/{vault_id}/secrets/{path}:
+    delete:
+      operationId: deleteSecret
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - $ref: "#/components/parameters/SecretPath"
+      responses:
+        "204":
+          description: Secret deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Delete a secret
+      tags:
+      - Secrets
+    get:
+      operationId: getSecret
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - $ref: "#/components/parameters/SecretPath"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretResponse"
+          description: Decrypted secret value
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Retrieve a decrypted secret
+      tags:
+      - Secrets
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: fixed
+        price: "0.0015"
+    put:
+      operationId: putSecret
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - $ref: "#/components/parameters/SecretPath"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutSecretRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretMetadataResponse"
+          description: Secret created or updated
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+      summary: Store or update a secret
+      tags:
+      - Secrets
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: fixed
+        price: "0.0075"
+  /v1/vaults/{vault_id}/policies:
+    get:
+      operationId: listPolicies
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyListResponse"
+          description: Policy list
+      summary: List policies on a vault
+      tags:
+      - Policies
+    post:
+      operationId: createPolicy
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePolicyRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyResponse"
+          description: Policy created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Create an access policy
+      tags:
+      - Policies
+  /v1/vaults/{vault_id}/policies/{policy_id}:
+    delete:
+      operationId: deletePolicy
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - $ref: "#/components/parameters/PolicyId"
+      responses:
+        "204":
+          description: Policy revoked
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Revoke a policy
+      tags:
+      - Policies
+    put:
+      operationId: updatePolicy
+      parameters:
+      - $ref: "#/components/parameters/VaultId"
+      - $ref: "#/components/parameters/PolicyId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePolicyRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyResponse"
+          description: Policy updated
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Update a policy
+      tags:
+      - Policies
+  /v1/agents/enroll:
+    post:
+      description: |
+        Public endpoint (no auth required). Creates an agent under the human's org
+        and emails the credentials to the specified human email. The API key is NOT
+        returned in the response. Anti-spam: IP rate limiting + per-email cooldown.
+      operationId: enrollAgent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnrollAgentRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnrollAgentResponse"
+          description: Enrollment processed (uniform response to prevent email enumeration)
+        "429":
+          description: Rate limit exceeded
+      summary: Self-enroll an agent
+      tags:
+      - Agents
+  /v1/agents:
+    get:
+      operationId: listAgents
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentListResponse"
+          description: Agent list
+      summary: List agents
+      tags:
+      - Agents
+    post:
+      operationId: createAgent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgentRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentCreatedResponse"
+          description: Agent created with one-time API key
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      summary: Register a new agent
+      tags:
+      - Agents
+  /v1/agents/me:
+    get:
+      operationId: getAgentSelf
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentSelfResponse"
+          description: Agent self profile
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      summary: Get the calling agent's own profile
+      tags:
+      - Agents
+  /v1/agents/{agent_id}:
+    delete:
+      operationId: deleteAgent
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      responses:
+        "204":
+          description: Agent deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Delete an agent
+      tags:
+      - Agents
+    get:
+      operationId: getAgent
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+          description: Agent details
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Get agent details
+      tags:
+      - Agents
+    patch:
+      operationId: updateAgent
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAgentRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+          description: Agent updated
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Update an agent
+      tags:
+      - Agents
+  /v1/agents/{agent_id}/rotate-key:
+    post:
+      operationId: rotateAgentKey
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentKeyRotatedResponse"
+          description: New API key returned
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Rotate agent API key
+      tags:
+      - Agents
+  /v1/agents/{agent_id}/rotate-identity-keys:
+    post:
+      description: |
+        Rotates the agent's Ed25519 SSH keypair and P-256 ECDH keypair.
+        New private keys are stored in the __agent-keys vault; old keys are overwritten.
+        User-only endpoint — agents cannot rotate their own identity keys.
+      operationId: rotateAgentIdentityKeys
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+          description: Agent with updated public keys
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Rotate agent identity keys (SSH + ECDH)
+      tags:
+      - Agents
+  /v1/agents/{agent_id}/smart-accounts:
+    post:
+      description: |
+        Use after deploying a Safe on a new chain. Multi-chain; one Safe per chain.
+        Replaces any existing entry for the same chain_id.
+      operationId: addAgentSmartAccount
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddSmartAccountRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+          description: Agent with updated smart_accounts list
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Add a smart account (Safe) for this agent on a chain
+      tags:
+      - Agents
+  /v1/agents/{agent_id}/transactions:
+    get:
+      operationId: listTransactions
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      - $ref: "#/components/parameters/IncludeSignedTx"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionListResponse"
+          description: Transaction list
+      summary: List agent transactions
+      tags:
+      - Transactions
+    post:
+      description: |
+        Replay protection: send an optional **Idempotency-Key** header (e.g. UUID or opaque string).
+        Duplicate requests with the same key within 24 hours return the cached transaction response
+        (no second sign/broadcast). Omit the header for non-idempotent submissions.
+      operationId: submitTransaction
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      - description: Optional key for replay protection; duplicate requests return
+          cached response.
+        explode: false
+        in: header
+        name: Idempotency-Key
+        required: false
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitTransactionRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+          description: Transaction signed (and optionally broadcast)
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+          description: Transaction previously created with same Idempotency-Key (replay-safe
+            response)
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Idempotency-Key in use by another in-flight request; retry
+            later.
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+          description: Simulation reverted (when simulate_first is true)
+      summary: Submit a transaction for signing
+      tags:
+      - Transactions
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: quote
+  /v1/agents/{agent_id}/transactions/{tx_id}:
+    get:
+      operationId: getTransaction
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      - explode: false
+        in: path
+        name: tx_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - $ref: "#/components/parameters/IncludeSignedTx"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+          description: Transaction details
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Get a transaction by ID
+      tags:
+      - Transactions
+  /v1/agents/{agent_id}/transactions/sign:
+    post:
+      description: |
+        Signs a transaction inside the server (or TEE when using Shroud) but does
+        **not** broadcast it. The caller receives the raw `signed_tx` hex and
+        `tx_hash` so it can submit to any RPC of its choosing.
+
+        All agent guardrails (allowlists, value caps, daily limits) are enforced
+        exactly as for the submit endpoint. The signed transaction is recorded for
+        audit and daily-limit tracking with `status: "sign_only"`.
+      operationId: signTransaction
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignTransactionRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignTransactionResponse"
+          description: Transaction signed successfully (not broadcast)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+      summary: Sign a transaction without broadcasting
+      tags:
+      - Transactions
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: quote
+  /v1/agents/{agent_id}/transactions/simulate:
+    post:
+      operationId: simulateTransaction
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulateTransactionRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationResponse"
+          description: Simulation result
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+      summary: Simulate a transaction via Tenderly
+      tags:
+      - Transactions
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: fixed
+        price: "0.075"
+  /v1/agents/{agent_id}/transactions/simulate-bundle:
+    post:
+      operationId: simulateBundle
+      parameters:
+      - $ref: "#/components/parameters/AgentId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulateBundleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BundleSimulationResponse"
+          description: Bundle simulation results
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+      summary: Simulate a bundle of transactions
+      tags:
+      - Transactions
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: fixed
+        price: "0.075"
+  /v1/chains:
+    get:
+      operationId: listChains
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChainListResponse"
+          description: Chain list
+      security: []
+      summary: List enabled chains
+      tags:
+      - Chains
+  /v1/chains/{identifier}:
+    get:
+      operationId: getChain
+      parameters:
+      - description: Chain name (e.g. "ethereum") or numeric chain ID
+        explode: false
+        in: path
+        name: identifier
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChainResponse"
+          description: Chain details
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security: []
+      summary: Get chain by name or ID
+      tags:
+      - Chains
+  /v1/admin/chains:
+    get:
+      operationId: adminListChains
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChainListResponse"
+          description: Full chain list
+      summary: List all chains including disabled (admin)
+      tags:
+      - Chains
+    post:
+      operationId: createChain
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChainRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChainResponse"
+          description: Chain added
+      summary: Add a chain (admin)
+      tags:
+      - Chains
+  /v1/admin/chains/{chain_id}:
+    delete:
+      operationId: deleteChain
+      parameters:
+      - explode: false
+        in: path
+        name: chain_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Chain removed
+      summary: Remove a chain (admin)
+      tags:
+      - Chains
+    put:
+      operationId: updateChain
+      parameters:
+      - explode: false
+        in: path
+        name: chain_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateChainRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChainResponse"
+          description: Chain updated
+      summary: Update a chain (admin)
+      tags:
+      - Chains
+  /v1/secrets/{secret_id}/share:
+    post:
+      operationId: createShare
+      parameters:
+      - explode: false
+        in: path
+        name: secret_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateShareRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareResponse"
+          description: Share created
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Create a share link for a secret
+      tags:
+      - Sharing
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: fixed
+        price: "0.003"
+  /v1/share/{share_id}:
+    delete:
+      operationId: revokeShare
+      parameters:
+      - explode: false
+        in: path
+        name: share_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Share revoked
+      summary: Revoke a share link
+      tags:
+      - Sharing
+    get:
+      operationId: accessShare
+      parameters:
+      - explode: false
+        in: path
+        name: share_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedSecretResponse"
+          description: Shared secret value
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security: []
+      summary: Access a shared secret
+      tags:
+      - Sharing
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: fixed
+        price: "0.0015"
+  /v1/shares/outbound:
+    get:
+      operationId: listOutboundShares
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareListResponse"
+          description: Outbound share list
+      summary: List shares you have sent
+      tags:
+      - Sharing
+  /v1/shares/inbound:
+    get:
+      operationId: listInboundShares
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareListResponse"
+          description: Inbound share list
+      summary: List shares sent to you
+      tags:
+      - Sharing
+  /v1/shares/{share_id}/accept:
+    post:
+      operationId: acceptShare
+      parameters:
+      - explode: false
+        in: path
+        name: share_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Share accepted
+      summary: Accept an inbound share
+      tags:
+      - Sharing
+  /v1/shares/{share_id}/decline:
+    post:
+      operationId: declineShare
+      parameters:
+      - explode: false
+        in: path
+        name: share_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Share declined
+      summary: Decline an inbound share
+      tags:
+      - Sharing
+  /v1/org/members:
+    get:
+      operationId: listOrgMembers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgMemberListResponse"
+          description: Member list
+      summary: List organization members
+      tags:
+      - Organization
+  /v1/org/agent-keys-vault:
+    get:
+      description: Returns the vault id for the caller's org agent-keys vault (used
+        for revealing agent identity keys). Users only; 404 if the vault does not
+        exist.
+      operationId: getAgentKeysVault
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentKeysVaultResponse"
+          description: Agent-keys vault id
+        "404":
+          description: Agent-keys vault not found
+      summary: Get the org's __agent-keys vault id
+      tags:
+      - Organization
+  /v1/org/invite:
+    post:
+      operationId: inviteMember
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteMemberRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteMemberResponse"
+          description: Invitation sent
+      summary: Invite a member by email
+      tags:
+      - Organization
+  /v1/org/members/{user_id}:
+    delete:
+      operationId: removeMember
+      parameters:
+      - explode: false
+        in: path
+        name: user_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Member removed
+      summary: Remove a member from the organization
+      tags:
+      - Organization
+    patch:
+      operationId: updateMemberRole
+      parameters:
+      - explode: false
+        in: path
+        name: user_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberRoleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgMemberResponse"
+          description: Role updated
+      summary: Update a member's role
+      tags:
+      - Organization
+  /v1/billing/usage:
+    get:
+      operationId: billingUsage
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageSummaryResponse"
+          description: Usage summary
+      summary: Get usage summary (legacy)
+      tags:
+      - Billing
+  /v1/billing/history:
+    get:
+      operationId: billingHistory
+      parameters:
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 50
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageHistoryResponse"
+          description: Usage event list
+      summary: Get usage event history (legacy)
+      tags:
+      - Billing
+  /v1/billing/subscribe:
+    post:
+      operationId: billingSubscribe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscribeRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutUrlResponse"
+          description: Checkout URL
+      summary: Start a subscription via Stripe Checkout
+      tags:
+      - Billing
+  /v1/billing/portal:
+    post:
+      operationId: billingPortal
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortalUrlResponse"
+          description: Portal URL
+      summary: Open Stripe Customer Portal
+      tags:
+      - Billing
+  /v1/billing/subscription:
+    get:
+      operationId: billingSubscription
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+          description: Full billing summary
+      summary: "Get subscription, usage, and credit summary"
+      tags:
+      - Billing
+  /v1/billing/credits/topup:
+    post:
+      operationId: billingCreditTopup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopupRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutUrlResponse"
+          description: Checkout URL for top-up
+      summary: Top up prepaid credits via Stripe
+      tags:
+      - Billing
+  /v1/billing/credits/balance:
+    get:
+      operationId: billingCreditBalance
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditBalanceResponse"
+          description: Credit balance
+      summary: Get credit balance
+      tags:
+      - Billing
+  /v1/billing/credits/transactions:
+    get:
+      operationId: billingCreditTransactions
+      parameters:
+      - explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 50
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditTransactionsListResponse"
+          description: Credit ledger
+      summary: Get credit transaction ledger
+      tags:
+      - Billing
+  /v1/billing/llm-token-billing:
+    get:
+      description: Returns whether LLM token billing is enabled for the caller's org.
+      operationId: getLlmTokenBilling
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmTokenBillingStatus"
+          description: LLM token billing status
+      summary: Get LLM token billing status
+      tags:
+      - Billing
+  /v1/billing/llm-token-billing/subscribe:
+    post:
+      description: |
+        Creates a Stripe Checkout session for the LLM token billing pricing plan. Returns a checkout URL to redirect the user. After the user completes checkout, a webhook activates LLM billing for the org.
+      operationId: subscribeLlmTokenBilling
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmCheckoutResponse"
+          description: Stripe Checkout URL
+      summary: Subscribe to LLM token billing
+      tags:
+      - Billing
+  /v1/billing/llm-token-billing/disable:
+    post:
+      description: |
+        Disables LLM token billing for the org and cancels all active Stripe subscriptions for the LLM pricing plan. Agents will fall back to direct provider routing. You can re-enable it at any time.
+      operationId: disableLlmTokenBilling
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmDisableResponse"
+          description: LLM billing disabled
+      summary: Disable LLM token billing
+      tags:
+      - Billing
+  /v1/billing/overage-method:
+    patch:
+      operationId: billingOverageMethod
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OverageMethodRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverageMethodResponse"
+          description: Overage method updated
+      summary: Set overage payment method
+      tags:
+      - Billing
+  /v1/billing/webhooks:
+    post:
+      operationId: billingWebhook
+      responses:
+        "200":
+          description: Webhook processed
+      security: []
+      summary: Stripe webhook receiver
+      tags:
+      - Billing
+  /v1/audit/events:
+    get:
+      operationId: queryAuditEvents
+      parameters:
+      - explode: true
+        in: query
+        name: resource_id
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: actor_id
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: action
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: from
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: to
+        required: false
+        schema:
+          format: date-time
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 100
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventsResponse"
+          description: Audit events
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+      summary: Query audit events
+      tags:
+      - Audit
+      x-agentcash-auth:
+        mode: paid
+      x-payment-info:
+        protocols:
+        - x402
+        pricingMode: fixed
+        price: "0.0008"
+  /v1/security/ip-rules:
+    get:
+      operationId: listIpRules
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpRulesListResponse"
+          description: IP rule list
+      summary: List IP rules
+      tags:
+      - Security
+    post:
+      operationId: createIpRule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIpRuleRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpRuleResponse"
+          description: Rule created
+      summary: Create an IP rule
+      tags:
+      - Security
+  /v1/security/ip-rules/{rule_id}:
+    delete:
+      operationId: deleteIpRule
+      parameters:
+      - explode: false
+        in: path
+        name: rule_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Rule deleted
+      summary: Delete an IP rule
+      tags:
+      - Security
+  /v1/treasury:
+    get:
+      operationId: listTreasuries
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/listTreasuries_200_response"
+          description: List of treasuries
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security:
+      - BearerAuth: []
+      summary: List treasuries
+      tags:
+      - Treasury
+    post:
+      operationId: createTreasury
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTreasuryRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreasuryResponse"
+          description: Treasury created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      security:
+      - BearerAuth: []
+      summary: Create a treasury (Safe multisig)
+      tags:
+      - Treasury
+  /v1/treasury/{treasury_id}:
+    delete:
+      operationId: deleteTreasury
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Treasury deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - BearerAuth: []
+      summary: Delete a treasury and its signers
+      tags:
+      - Treasury
+    get:
+      operationId: getTreasury
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreasuryResponse"
+          description: Treasury details
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - BearerAuth: []
+      summary: Get treasury details
+      tags:
+      - Treasury
+    patch:
+      operationId: updateTreasury
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTreasuryRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreasuryResponse"
+          description: Treasury updated
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - BearerAuth: []
+      summary: Update treasury name and/or threshold
+      tags:
+      - Treasury
+  /v1/treasury/{treasury_id}/signers:
+    post:
+      operationId: addTreasurySigner
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddSignerRequest"
+        required: true
+      responses:
+        "201":
+          description: Signer added
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      security:
+      - BearerAuth: []
+      summary: Add a signer to a treasury
+      tags:
+      - Treasury
+  /v1/treasury/{treasury_id}/signers/{signer_id}:
+    delete:
+      operationId: removeTreasurySigner
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: signer_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Signer removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - BearerAuth: []
+      summary: Remove a signer from a treasury
+      tags:
+      - Treasury
+  /v1/treasury/{treasury_id}/access-requests:
+    get:
+      operationId: listTreasuryAccessRequests
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/listTreasuryAccessRequests_200_response"
+          description: List of access requests
+      security:
+      - BearerAuth: []
+      summary: List access requests for a treasury
+      tags:
+      - Treasury
+    post:
+      operationId: requestTreasuryAccess
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRequestResponse"
+          description: Access request created
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      security:
+      - BearerAuth: []
+      summary: Request access to a treasury (agent-only)
+      tags:
+      - Treasury
+  /v1/treasury/{treasury_id}/access-requests/{request_id}/approve:
+    post:
+      operationId: approveTreasuryAccess
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: request_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Access request approved
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - BearerAuth: []
+      summary: Approve an access request
+      tags:
+      - Treasury
+  /v1/treasury/{treasury_id}/access-requests/{request_id}/deny:
+    post:
+      operationId: denyTreasuryAccess
+      parameters:
+      - explode: false
+        in: path
+        name: treasury_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: request_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Access request denied
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+      - BearerAuth: []
+      summary: Deny an access request
+      tags:
+      - Treasury
+  /v1/admin/settings:
+    get:
+      operationId: adminListSettings
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsListResponse"
+          description: Settings list
+      summary: List platform settings
+      tags:
+      - Admin
+  /v1/admin/settings/{key}:
+    delete:
+      operationId: adminDeleteSetting
+      parameters:
+      - explode: false
+        in: path
+        name: key
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Setting deleted
+      summary: Delete a platform setting
+      tags:
+      - Admin
+    put:
+      operationId: adminUpdateSetting
+      parameters:
+      - explode: false
+        in: path
+        name: key
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingResponse"
+          description: Setting updated
+      summary: Update a platform setting
+      tags:
+      - Admin
+  /v1/admin/x402:
+    get:
+      operationId: adminGetX402Config
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/X402ConfigResponse"
+          description: x402 config
+      summary: Get x402 payment config
+      tags:
+      - Admin
+    put:
+      operationId: adminUpdateX402Config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/X402ConfigResponse"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/X402ConfigResponse"
+          description: Config updated
+      summary: Update x402 payment config
+      tags:
+      - Admin
+  /v1/admin/users:
+    get:
+      operationId: adminListUsers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersListResponse"
+          description: User list
+      summary: List all platform users
+      tags:
+      - Admin
+  /v1/admin/users/{user_id}:
+    delete:
+      operationId: adminDeleteUser
+      parameters:
+      - explode: false
+        in: path
+        name: user_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: User deleted
+      summary: Delete a user (cascade)
+      tags:
+      - Admin
+  /v1/admin/orgs/{org_id}/limits:
+    get:
+      operationId: adminGetOrgLimits
+      parameters:
+      - explode: false
+        in: path
+        name: org_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgLimitsResponse"
+          description: Org limits
+      summary: Get org limits
+      tags:
+      - Admin
+    put:
+      operationId: adminUpdateOrgLimits
+      parameters:
+      - explode: false
+        in: path
+        name: org_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrgLimitsRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgLimitsResponse"
+          description: Limits updated
+      summary: Update org limits
+      tags:
+      - Admin
+  /v1/admin/orgs/{org_id}/billing-tier:
+    put:
+      description: |
+        Manually set an organization's billing tier to free, pro, business, or enterprise.
+        For testing, manual upgrades, and trial grants — does not create a Stripe subscription.
+        Setting to "pro", "business", or "enterprise" sets period_end to now + duration_days (default 365).
+        Setting to "free" clears subscription data. Use duration_days: 90 for a 3-month trial.
+      operationId: adminSetBillingTier
+      parameters:
+      - explode: false
+        in: path
+        name: org_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetBillingTierRequest"
+        required: true
+      responses:
+        "200":
+          description: Billing tier updated
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      summary: Set org billing tier (without Stripe)
+      tags:
+      - Admin
+  /v1/admin/usage/reset:
+    post:
+      description: |
+        Deletes every row in `usage_events` for all organizations. Resets monthly
+        request counts used for free-tier / x402 quota. Does not change prepaid credit
+        balances or Stripe. **Platform admin only** (same guard as other `/v1/admin/*` routes).
+      operationId: adminResetUsageEvents
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResetUsageEventsResponse"
+          description: Usage table cleared; returns number of deleted rows
+        "403":
+          $ref: "#/components/responses/Forbidden"
+      summary: Reset all API usage events (testing)
+      tags:
+      - Admin
+  /v1/admin/usage/reset-for-user:
+    post:
+      description: |
+        Looks up a registered user by email and deletes all `usage_events` rows for that
+        user's `org_id`. Resets free-tier / monthly quota for the whole org (not other orgs).
+        **Platform admin only.**
+      operationId: adminResetUsageForUserByEmail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetUsageForUserEmailRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResetUsageForUserEmailResponse"
+          description: Usage cleared for the user's org
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      summary: Reset API usage for a user's organization
+      tags:
+      - Admin
+  /v1/health:
+    get:
+      operationId: healthCheck
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+          description: Healthy
+      security: []
+      summary: Service health check
+      tags:
+      - Health
+  /v1/health/hsm:
+    get:
+      operationId: healthHsm
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/healthHsm_200_response"
+          description: HSM status
+      security: []
+      summary: HSM connectivity check
+      tags:
+      - Health
+components:
+  parameters:
+    VaultId:
+      explode: false
+      in: path
+      name: vault_id
+      required: true
+      schema:
+        format: uuid
+        type: string
+      style: simple
+    SecretPath:
+      description: Secret path (e.g. "db/credentials")
+      explode: false
+      in: path
+      name: path
+      required: true
+      schema:
+        type: string
+      style: simple
+    AgentId:
+      explode: false
+      in: path
+      name: agent_id
+      required: true
+      schema:
+        format: uuid
+        type: string
+      style: simple
+    PolicyId:
+      explode: false
+      in: path
+      name: policy_id
+      required: true
+      schema:
+        format: uuid
+        type: string
+      style: simple
+    IncludeSignedTx:
+      description: |
+        Set to `true` or `1` to include the raw signed transaction hex in the response. Omitted by default to reduce key exfiltration risk. Only the literal values "true" or "1" enable inclusion; any other value or omission returns responses without signed_tx. Applies to GET /v1/agents/{agent_id}/transactions and GET /v1/agents/{agent_id}/transactions/{tx_id}.
+      explode: true
+      in: query
+      name: include_signed_tx
+      required: false
+      schema:
+        default: false
+        example: false
+        type: boolean
+      style: form
+  responses:
+    BadRequest:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+      description: Invalid request
+    Unauthorized:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+      description: Authentication required or invalid
+    Forbidden:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+      description: Insufficient permissions
+    NotFound:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+      description: Resource not found
+    PaymentRequired:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PaymentRequirement"
+      description: x402 payment required
+  schemas:
+    ProblemDetails:
+      description: RFC 7807 error envelope
+      example:
+        detail: detail
+        type: type
+        title: title
+        status: 6
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+    ResetUsageEventsResponse:
+      example:
+        deleted_events: 0
+      properties:
+        deleted_events:
+          description: Number of usage_events rows removed
+          format: int64
+          type: integer
+      required:
+      - deleted_events
+    ResetUsageForUserEmailRequest:
+      example:
+        email: email
+      properties:
+        email:
+          format: email
+          type: string
+      required:
+      - email
+    ResetUsageForUserEmailResponse:
+      example:
+        user_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        deleted_events: 0
+        display_name: display_name
+        email: email
+      properties:
+        deleted_events:
+          format: int64
+          type: integer
+        org_id:
+          format: uuid
+          type: string
+        user_id:
+          format: uuid
+          type: string
+        email:
+          type: string
+        display_name:
+          type: string
+      required:
+      - deleted_events
+      - display_name
+      - email
+      - org_id
+      - user_id
+    LoginRequest:
+      example:
+        password: password
+        email: email
+      properties:
+        email:
+          format: email
+          type: string
+        password:
+          format: password
+          type: string
+      required:
+      - email
+      - password
+    LoginResponse:
+      example:
+        access_token: access_token
+        refresh_token: refresh_token
+        mfa_token: mfa_token
+        mfa_required: true
+        token_type: token_type
+        expires_in: 0
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        mfa_required:
+          type: boolean
+        mfa_token:
+          type: string
+    TokenResponse:
+      example:
+        access_token: access_token
+        refresh_token: refresh_token
+        token_type: token_type
+        expires_in: 0
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+      required:
+      - access_token
+      - token_type
+    AgentTokenRequest:
+      example:
+        agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        api_key: api_key
+      properties:
+        agent_id:
+          description: Optional when using key-only auth (ocv_ keys auto-resolve agent)
+          format: uuid
+          type: string
+        api_key:
+          type: string
+      required:
+      - api_key
+    UserApiKeyTokenRequest:
+      example:
+        api_key: api_key
+      properties:
+        api_key:
+          type: string
+      required:
+      - api_key
+    SignupRequest:
+      example:
+        password: password
+        display_name: display_name
+        email: email
+      properties:
+        email:
+          format: email
+          type: string
+        password:
+          format: password
+          type: string
+        display_name:
+          type: string
+      required:
+      - email
+      - password
+    SignupResponse:
+      example:
+        access_token: access_token
+        message: message
+        token_type: token_type
+        email: email
+      properties:
+        message:
+          type: string
+        email:
+          type: string
+        access_token:
+          type: string
+        token_type:
+          type: string
+    GoogleAuthRequest:
+      example:
+        id_token: id_token
+      properties:
+        id_token:
+          type: string
+      required:
+      - id_token
+    ChangePasswordRequest:
+      example:
+        new_password: new_password
+        current_password: current_password
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+      required:
+      - current_password
+      - new_password
+    ForgotPasswordRequest:
+      example:
+        email: email
+      properties:
+        email:
+          format: email
+          type: string
+      required:
+      - email
+    ForgotPasswordResponse:
+      example:
+        message: message
+      properties:
+        message:
+          type: string
+    ResetPasswordRequest:
+      example:
+        new_password: new_password
+        token: token
+      properties:
+        token:
+          type: string
+        new_password:
+          type: string
+      required:
+      - new_password
+      - token
+    ResetPasswordResponse:
+      example:
+        message: message
+      properties:
+        message:
+          type: string
+    MfaStatusResponse:
+      example:
+        enabled: true
+      properties:
+        enabled:
+          type: boolean
+    MfaSetupResponse:
+      example:
+        otpauth_uri: otpauth_uri
+        secret: secret
+      properties:
+        otpauth_uri:
+          type: string
+        secret:
+          type: string
+    MfaVerifySetupRequest:
+      example:
+        code: code
+      properties:
+        code:
+          type: string
+      required:
+      - code
+    MfaVerifySetupResponse:
+      example:
+        recovery_codes:
+        - recovery_codes
+        - recovery_codes
+      properties:
+        recovery_codes:
+          items:
+            type: string
+          type: array
+    MfaVerifyRequest:
+      example:
+        code: code
+        mfa_token: mfa_token
+      properties:
+        code:
+          type: string
+        mfa_token:
+          type: string
+      required:
+      - code
+      - mfa_token
+    MfaDisableRequest:
+      example:
+        password: password
+        code: code
+      properties:
+        code:
+          type: string
+        password:
+          type: string
+    DeviceCodeRequest:
+      example:
+        client_id: client_id
+        email: email
+      properties:
+        client_id:
+          type: string
+        email:
+          description: Account email; only that user may approve the code in the dashboard.
+          format: email
+          type: string
+      required:
+      - client_id
+      - email
+    DeviceCodeResponse:
+      example:
+        user_code: user_code
+        device_code: device_code
+        interval: 6
+        verification_uri: https://openapi-generator.tech
+        expires_in: 0
+      properties:
+        device_code:
+          type: string
+        user_code:
+          type: string
+        verification_uri:
+          format: uri
+          type: string
+        expires_in:
+          type: integer
+        interval:
+          type: integer
+    DeviceTokenRequest:
+      example:
+        grant_type: grant_type
+        device_code: device_code
+      properties:
+        device_code:
+          type: string
+        grant_type:
+          type: string
+      required:
+      - device_code
+      - grant_type
+    DeviceTokenResponse:
+      example:
+        access_token: access_token
+        user_id: user_id
+        org_id: org_id
+        token_type: token_type
+        error: error
+        expires_in: 0
+        email: email
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        error:
+          type: string
+        email:
+          type: string
+        user_id:
+          type: string
+        org_id:
+          type: string
+    DeviceApproveRequest:
+      example:
+        user_code: user_code
+      properties:
+        user_code:
+          type: string
+      required:
+      - user_code
+    UserProfileResponse:
+      example:
+        auth_method: auth_method
+        role: role
+        email_verified: true
+        marketing_emails: true
+        totp_enabled: true
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        display_name: display_name
+        email: email
+      properties:
+        id:
+          format: uuid
+          type: string
+        email:
+          type: string
+        display_name:
+          type: string
+        auth_method:
+          type: string
+        role:
+          type: string
+        email_verified:
+          type: boolean
+        marketing_emails:
+          type: boolean
+        totp_enabled:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+    UpdateProfileRequest:
+      example:
+        marketing_emails: true
+        display_name: display_name
+      properties:
+        display_name:
+          type: string
+        marketing_emails:
+          type: boolean
+    CreateApiKeyRequest:
+      example:
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        name: name
+        scopes:
+        - scopes
+        - scopes
+      properties:
+        name:
+          type: string
+        scopes:
+          items:
+            type: string
+          type: array
+        expires_at:
+          format: date-time
+          type: string
+      required:
+      - name
+    ApiKeyResponse:
+      example:
+        last_used_at: 2000-01-23T04:56:07.000+00:00
+        is_active: true
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        key_prefix: key_prefix
+        name: name
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        scopes:
+        - scopes
+        - scopes
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          type: string
+        key_prefix:
+          type: string
+        scopes:
+          items:
+            type: string
+          type: array
+        is_active:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        last_used_at:
+          format: date-time
+          type: string
+    ApiKeyCreatedResponse:
+      example:
+        api_key: api_key
+        key:
+          last_used_at: 2000-01-23T04:56:07.000+00:00
+          is_active: true
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          key_prefix: key_prefix
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          scopes:
+          - scopes
+          - scopes
+      properties:
+        key:
+          $ref: "#/components/schemas/ApiKeyResponse"
+        api_key:
+          description: Full key (shown once)
+          type: string
+    ApiKeyListResponse:
+      example:
+        keys:
+        - last_used_at: 2000-01-23T04:56:07.000+00:00
+          is_active: true
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          key_prefix: key_prefix
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          scopes:
+          - scopes
+          - scopes
+        - last_used_at: 2000-01-23T04:56:07.000+00:00
+          is_active: true
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          key_prefix: key_prefix
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          scopes:
+          - scopes
+          - scopes
+      properties:
+        keys:
+          items:
+            $ref: "#/components/schemas/ApiKeyResponse"
+          type: array
+    CreateVaultRequest:
+      example:
+        name: name
+        description: description
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+      - name
+    VaultResponse:
+      example:
+        cmek_enabled: true
+        cmek_fingerprint: cmek_fingerprint
+        name: name
+        created_by_type: created_by_type
+        description: description
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        created_by: created_by
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        created_by:
+          type: string
+        created_by_type:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        cmek_enabled:
+          description: Whether client-managed encryption is enabled
+          type: boolean
+        cmek_fingerprint:
+          description: SHA-256 fingerprint of the CMEK key (64 hex chars)
+          type: string
+      required:
+      - created_at
+      - id
+      - name
+    VaultListResponse:
+      example:
+        vaults:
+        - cmek_enabled: true
+          cmek_fingerprint: cmek_fingerprint
+          name: name
+          created_by_type: created_by_type
+          description: description
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_by: created_by
+        - cmek_enabled: true
+          cmek_fingerprint: cmek_fingerprint
+          name: name
+          created_by_type: created_by_type
+          description: description
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_by: created_by
+      properties:
+        vaults:
+          items:
+            $ref: "#/components/schemas/VaultResponse"
+          type: array
+    EnableCmekRequest:
+      example:
+        fingerprint: fingerprint
+      properties:
+        fingerprint:
+          description: SHA-256 hex fingerprint of the CMEK key (64 chars)
+          type: string
+      required:
+      - fingerprint
+    CmekRotateRequest:
+      example:
+        new_fingerprint: new_fingerprint
+      properties:
+        new_fingerprint:
+          description: SHA-256 hex fingerprint of the new CMEK key
+          type: string
+      required:
+      - new_fingerprint
+    CmekRotationJobResponse:
+      example:
+        processed: 6
+        completed_at: 2000-01-23T04:56:07.000+00:00
+        old_fingerprint: old_fingerprint
+        started_at: 2000-01-23T04:56:07.000+00:00
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        new_fingerprint: new_fingerprint
+        error: error
+        vault_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        status: pending
+        total_secrets: 0
+      properties:
+        id:
+          format: uuid
+          type: string
+        vault_id:
+          format: uuid
+          type: string
+        old_fingerprint:
+          type: string
+        new_fingerprint:
+          type: string
+        status:
+          enum:
+          - pending
+          - running
+          - completed
+          - failed
+          type: string
+        total_secrets:
+          type: integer
+        processed:
+          type: integer
+        error:
+          type: string
+        started_at:
+          format: date-time
+          type: string
+        completed_at:
+          format: date-time
+          type: string
+        created_at:
+          format: date-time
+          type: string
+      required:
+      - created_at
+      - id
+      - processed
+      - status
+      - total_secrets
+      - vault_id
+    PutSecretRequest:
+      example:
+        metadata:
+          key: ""
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        rotation_policy:
+          key: ""
+        type: generic
+        max_access_count: 0
+        value: value
+      properties:
+        type:
+          default: generic
+          description: "Secret type (generic, password, api_key, certificate, private_key,\
+            \ ssh_key, env)"
+          type: string
+        value:
+          type: string
+        metadata:
+          additionalProperties: true
+          type: object
+        expires_at:
+          format: date-time
+          type: string
+        rotation_policy:
+          additionalProperties: true
+          type: object
+        max_access_count:
+          type: integer
+      required:
+      - value
+    SecretMetadataResponse:
+      example:
+        path: path
+        metadata:
+          key: ""
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        type: type
+        version: 0
+      properties:
+        id:
+          format: uuid
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+        version:
+          type: integer
+        metadata:
+          additionalProperties: true
+          type: object
+        created_at:
+          format: date-time
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+      required:
+      - created_at
+      - id
+      - path
+      - type
+      - version
+    SecretResponse:
+      example:
+        path: path
+        metadata:
+          key: ""
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        created_at: 2000-01-23T04:56:07.000+00:00
+        cmek_encrypted: true
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        type: type
+        value: value
+        version: 0
+        created_by: created_by
+      properties:
+        id:
+          format: uuid
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+        value:
+          type: string
+        version:
+          type: integer
+        metadata:
+          additionalProperties: true
+          type: object
+        created_by:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        cmek_encrypted:
+          description: Whether this secret value is CMEK-encrypted (requires client-side
+            decryption)
+          type: boolean
+      required:
+      - created_at
+      - id
+      - path
+      - type
+      - value
+      - version
+    SecretListResponse:
+      example:
+        secrets:
+        - path: path
+          metadata:
+            key: ""
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          type: type
+          version: 0
+        - path: path
+          metadata:
+            key: ""
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          type: type
+          version: 0
+      properties:
+        secrets:
+          items:
+            $ref: "#/components/schemas/SecretMetadataResponse"
+          type: array
+    CreatePolicyRequest:
+      example:
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        permissions:
+        - permissions
+        - permissions
+        principal_type: user
+        conditions:
+          key: ""
+        principal_id: principal_id
+        secret_path_pattern: secret_path_pattern
+      properties:
+        secret_path_pattern:
+          type: string
+        principal_type:
+          enum:
+          - user
+          - agent
+          type: string
+        principal_id:
+          type: string
+        permissions:
+          items:
+            type: string
+          type: array
+        conditions:
+          additionalProperties: true
+          type: object
+        expires_at:
+          format: date-time
+          type: string
+      required:
+      - permissions
+      - principal_id
+      - principal_type
+      - secret_path_pattern
+    UpdatePolicyRequest:
+      example:
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        permissions:
+        - permissions
+        - permissions
+        conditions:
+          key: ""
+      properties:
+        permissions:
+          items:
+            type: string
+          type: array
+        conditions:
+          additionalProperties: true
+          type: object
+        expires_at:
+          format: date-time
+          type: string
+    PolicyResponse:
+      example:
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        permissions:
+        - permissions
+        - permissions
+        created_by_type: created_by_type
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        principal_type: principal_type
+        conditions:
+          key: ""
+        principal_id: principal_id
+        created_by: created_by
+        vault_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        secret_path_pattern: secret_path_pattern
+      properties:
+        id:
+          format: uuid
+          type: string
+        vault_id:
+          format: uuid
+          type: string
+        secret_path_pattern:
+          type: string
+        principal_type:
+          type: string
+        principal_id:
+          type: string
+        permissions:
+          items:
+            type: string
+          type: array
+        conditions:
+          additionalProperties: true
+          type: object
+        expires_at:
+          format: date-time
+          type: string
+        created_by:
+          type: string
+        created_by_type:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+      required:
+      - created_at
+      - id
+      - permissions
+      - principal_id
+      - principal_type
+      - secret_path_pattern
+      - vault_id
+    PolicyListResponse:
+      example:
+        policies:
+        - expires_at: 2000-01-23T04:56:07.000+00:00
+          permissions:
+          - permissions
+          - permissions
+          created_by_type: created_by_type
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          principal_type: principal_type
+          conditions:
+            key: ""
+          principal_id: principal_id
+          created_by: created_by
+          vault_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          secret_path_pattern: secret_path_pattern
+        - expires_at: 2000-01-23T04:56:07.000+00:00
+          permissions:
+          - permissions
+          - permissions
+          created_by_type: created_by_type
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          principal_type: principal_type
+          conditions:
+            key: ""
+          principal_id: principal_id
+          created_by: created_by
+          vault_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          secret_path_pattern: secret_path_pattern
+      properties:
+        policies:
+          items:
+            $ref: "#/components/schemas/PolicyResponse"
+          type: array
+    EnrollAgentRequest:
+      example:
+        human_email: human_email
+        name: name
+        description: description
+      properties:
+        name:
+          description: Display name for the new agent
+          type: string
+        human_email:
+          description: Email of the human who will receive the agent credentials
+          format: email
+          type: string
+        description:
+          description: Optional agent description
+          type: string
+      required:
+      - human_email
+      - name
+    EnrollAgentResponse:
+      example:
+        agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        message: message
+      properties:
+        agent_id:
+          description: UUID of the created agent (nil UUID when email not found —
+            uniform response)
+          format: uuid
+          type: string
+        message:
+          description: Status message (always generic to prevent email enumeration)
+          type: string
+    CreateAgentRequest:
+      example:
+        shroud_config:
+          encoding_detection:
+            detect_hex: true
+            action: warn
+            detect_base64: true
+            enabled: true
+            detect_unicode_escape: true
+          enable_response_filtering: true
+          max_requests_per_day: 2
+          daily_budget_usd: 7.061401241503109
+          threat_logging: true
+          social_engineering_detection:
+            action: warn
+            sensitivity: medium
+            enabled: true
+          pii_policy: redact
+          network_detection:
+            allowed_domains:
+            - allowed_domains
+            - allowed_domains
+            blocked_domains:
+            - blocked_domains
+            - blocked_domains
+            action: warn
+            enabled: true
+          context_injection_threshold: 0.14658129805029452
+          enable_secret_redaction: true
+          command_injection_detection:
+            patterns: default
+            action: block
+            custom_patterns:
+            - custom_patterns
+            - custom_patterns
+            enabled: true
+          denied_models:
+          - denied_models
+          - denied_models
+          allowed_providers:
+          - allowed_providers
+          - allowed_providers
+          max_tokens_per_request: 5
+          max_requests_per_minute: 5
+          filesystem_detection:
+            blocked_paths:
+            - blocked_paths
+            - blocked_paths
+            action: log
+            enabled: false
+          injection_threshold: 0.6027456183070403
+          unicode_normalization:
+            normalization_form: NFKC
+            strip_zero_width: true
+            normalize_homoglyphs: true
+            enabled: true
+          sanitization_mode: block
+          allowed_models:
+          - allowed_models
+          - allowed_models
+        description: description
+        oidc_client_id: oidc_client_id
+        intents_api_enabled: false
+        token_ttl_seconds: 0
+        shroud_enabled: false
+        auth_method: api_key
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        client_cert_fingerprint: client_cert_fingerprint
+        tx_allowed_chains:
+        - tx_allowed_chains
+        - tx_allowed_chains
+        tx_daily_limit_eth: tx_daily_limit_eth
+        name: name
+        tx_max_value_eth: tx_max_value_eth
+        vault_ids:
+        - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        scopes:
+        - scopes
+        - scopes
+        tx_to_allowlist:
+        - tx_to_allowlist
+        - tx_to_allowlist
+        oidc_issuer: oidc_issuer
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        auth_method:
+          default: api_key
+          description: Authentication method. api_key generates a one-time key; mtls
+            requires client_cert_fingerprint; oidc_client_credentials requires oidc_issuer
+            and oidc_client_id.
+          enum:
+          - api_key
+          - mtls
+          - oidc_client_credentials
+          type: string
+        scopes:
+          items:
+            type: string
+          type: array
+        expires_at:
+          format: date-time
+          type: string
+        intents_api_enabled:
+          default: false
+          type: boolean
+        tx_to_allowlist:
+          items:
+            type: string
+          type: array
+        tx_max_value_eth:
+          type: string
+        tx_daily_limit_eth:
+          type: string
+        tx_allowed_chains:
+          items:
+            type: string
+          type: array
+        token_ttl_seconds:
+          description: Per-agent token TTL in seconds (overrides global default)
+          type: integer
+          nullable: true
+        vault_ids:
+          description: Restrict agent to specific vault UUIDs (empty = all vaults
+            in org)
+          items:
+            format: uuid
+            type: string
+          type: array
+        client_cert_fingerprint:
+          description: SHA-256 fingerprint of the client certificate (required for
+            mTLS auth)
+          type: string
+        oidc_issuer:
+          description: OIDC issuer URL (required for oidc_client_credentials auth)
+          type: string
+        oidc_client_id:
+          description: OIDC client ID (required for oidc_client_credentials auth)
+          type: string
+        shroud_enabled:
+          default: false
+          description: Enable Shroud LLM Proxy for this agent
+          type: boolean
+        shroud_config:
+          $ref: "#/components/schemas/ShroudConfig"
+      required:
+      - name
+    UpdateAgentRequest:
+      example:
+        shroud_config:
+          encoding_detection:
+            detect_hex: true
+            action: warn
+            detect_base64: true
+            enabled: true
+            detect_unicode_escape: true
+          enable_response_filtering: true
+          max_requests_per_day: 2
+          daily_budget_usd: 7.061401241503109
+          threat_logging: true
+          social_engineering_detection:
+            action: warn
+            sensitivity: medium
+            enabled: true
+          pii_policy: redact
+          network_detection:
+            allowed_domains:
+            - allowed_domains
+            - allowed_domains
+            blocked_domains:
+            - blocked_domains
+            - blocked_domains
+            action: warn
+            enabled: true
+          context_injection_threshold: 0.14658129805029452
+          enable_secret_redaction: true
+          command_injection_detection:
+            patterns: default
+            action: block
+            custom_patterns:
+            - custom_patterns
+            - custom_patterns
+            enabled: true
+          denied_models:
+          - denied_models
+          - denied_models
+          allowed_providers:
+          - allowed_providers
+          - allowed_providers
+          max_tokens_per_request: 5
+          max_requests_per_minute: 5
+          filesystem_detection:
+            blocked_paths:
+            - blocked_paths
+            - blocked_paths
+            action: log
+            enabled: false
+          injection_threshold: 0.6027456183070403
+          unicode_normalization:
+            normalization_form: NFKC
+            strip_zero_width: true
+            normalize_homoglyphs: true
+            enabled: true
+          sanitization_mode: block
+          allowed_models:
+          - allowed_models
+          - allowed_models
+        is_active: true
+        intents_api_enabled: true
+        token_ttl_seconds: 0
+        shroud_enabled: true
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        tx_allowed_chains:
+        - tx_allowed_chains
+        - tx_allowed_chains
+        tx_daily_limit_eth: tx_daily_limit_eth
+        name: name
+        tx_max_value_eth: tx_max_value_eth
+        vault_ids:
+        - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        scopes:
+        - scopes
+        - scopes
+        tx_to_allowlist:
+        - tx_to_allowlist
+        - tx_to_allowlist
+      properties:
+        name:
+          type: string
+        scopes:
+          items:
+            type: string
+          type: array
+        is_active:
+          type: boolean
+        expires_at:
+          format: date-time
+          type: string
+        intents_api_enabled:
+          type: boolean
+        tx_to_allowlist:
+          items:
+            type: string
+          type: array
+        tx_max_value_eth:
+          type: string
+        tx_daily_limit_eth:
+          type: string
+        tx_allowed_chains:
+          items:
+            type: string
+          type: array
+        token_ttl_seconds:
+          type: integer
+          nullable: true
+        vault_ids:
+          items:
+            format: uuid
+            type: string
+          type: array
+        shroud_enabled:
+          description: Enable/disable Shroud LLM Proxy
+          type: boolean
+        shroud_config:
+          $ref: "#/components/schemas/ShroudConfig"
+    AgentResponse:
+      example:
+        smart_accounts:
+        - chain: chain
+          chain_id: 9
+          init_data: "{}"
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          safe_address: safe_address
+          nonce: nonce
+        - chain: chain
+          chain_id: 9
+          init_data: "{}"
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          safe_address: safe_address
+          nonce: nonce
+        shroud_config:
+          encoding_detection:
+            detect_hex: true
+            action: warn
+            detect_base64: true
+            enabled: true
+            detect_unicode_escape: true
+          enable_response_filtering: true
+          max_requests_per_day: 2
+          daily_budget_usd: 7.061401241503109
+          threat_logging: true
+          social_engineering_detection:
+            action: warn
+            sensitivity: medium
+            enabled: true
+          pii_policy: redact
+          network_detection:
+            allowed_domains:
+            - allowed_domains
+            - allowed_domains
+            blocked_domains:
+            - blocked_domains
+            - blocked_domains
+            action: warn
+            enabled: true
+          context_injection_threshold: 0.14658129805029452
+          enable_secret_redaction: true
+          command_injection_detection:
+            patterns: default
+            action: block
+            custom_patterns:
+            - custom_patterns
+            - custom_patterns
+            enabled: true
+          denied_models:
+          - denied_models
+          - denied_models
+          allowed_providers:
+          - allowed_providers
+          - allowed_providers
+          max_tokens_per_request: 5
+          max_requests_per_minute: 5
+          filesystem_detection:
+            blocked_paths:
+            - blocked_paths
+            - blocked_paths
+            action: log
+            enabled: false
+          injection_threshold: 0.6027456183070403
+          unicode_normalization:
+            normalization_form: NFKC
+            strip_zero_width: true
+            normalize_homoglyphs: true
+            enabled: true
+          sanitization_mode: block
+          allowed_models:
+          - allowed_models
+          - allowed_models
+        is_active: true
+        description: description
+        oidc_client_id: oidc_client_id
+        created_at: 2000-01-23T04:56:07.000+00:00
+        intents_api_enabled: true
+        token_ttl_seconds: 0
+        shroud_enabled: true
+        ssh_public_key: ssh_public_key
+        ecdh_public_key: ecdh_public_key
+        auth_method: api_key
+        client_cert_fingerprint: client_cert_fingerprint
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        tx_allowed_chains:
+        - tx_allowed_chains
+        - tx_allowed_chains
+        tx_daily_limit_eth: tx_daily_limit_eth
+        last_active_at: 2000-01-23T04:56:07.000+00:00
+        name: name
+        tx_max_value_eth: tx_max_value_eth
+        vault_ids:
+        - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        scopes:
+        - scopes
+        - scopes
+        tx_to_allowlist:
+        - tx_to_allowlist
+        - tx_to_allowlist
+        oidc_issuer: oidc_issuer
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        auth_method:
+          enum:
+          - api_key
+          - mtls
+          - oidc_client_credentials
+          type: string
+        scopes:
+          items:
+            type: string
+          type: array
+        is_active:
+          type: boolean
+        intents_api_enabled:
+          type: boolean
+        tx_to_allowlist:
+          items:
+            type: string
+          type: array
+        tx_max_value_eth:
+          type: string
+        tx_daily_limit_eth:
+          type: string
+        tx_allowed_chains:
+          items:
+            type: string
+          type: array
+        token_ttl_seconds:
+          type: integer
+          nullable: true
+        vault_ids:
+          items:
+            format: uuid
+            type: string
+          type: array
+        client_cert_fingerprint:
+          description: SHA-256 fingerprint of the client certificate (mTLS agents)
+          type: string
+        oidc_issuer:
+          description: OIDC issuer URL (oidc_client_credentials agents)
+          type: string
+        oidc_client_id:
+          description: OIDC client ID (oidc_client_credentials agents)
+          type: string
+        ssh_public_key:
+          description: "Ed25519 SSH public key (base64-encoded, auto-generated at\
+            \ creation)"
+          type: string
+        ecdh_public_key:
+          description: "P-256 ECDH public key (base64 SEC1 uncompressed point, auto-generated\
+            \ at creation)"
+          type: string
+        shroud_enabled:
+          description: Whether this agent routes LLM traffic through the Shroud TEE
+            proxy
+          type: boolean
+        shroud_config:
+          $ref: "#/components/schemas/ShroudConfig"
+        created_at:
+          format: date-time
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        last_active_at:
+          format: date-time
+          type: string
+        smart_accounts:
+          description: Multi-chain; one Safe per chain
+          items:
+            $ref: "#/components/schemas/AgentSmartAccountResponse"
+          type: array
+      required:
+      - auth_method
+      - created_at
+      - id
+      - intents_api_enabled
+      - is_active
+      - name
+      - shroud_enabled
+    AgentSmartAccountResponse:
+      description: One Safe smart account per chain for an agent
+      example:
+        chain: chain
+        chain_id: 9
+        init_data: "{}"
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        safe_address: safe_address
+        nonce: nonce
+      properties:
+        id:
+          format: uuid
+          type: string
+        chain:
+          type: string
+        chain_id:
+          type: integer
+        safe_address:
+          type: string
+        nonce:
+          type: string
+        init_data:
+          type: object
+        created_at:
+          format: date-time
+          type: string
+    AddSmartAccountRequest:
+      example:
+        chain: chain
+        chain_id: 0
+        init_data: "{}"
+        safe_address: safe_address
+        nonce: nonce
+      properties:
+        chain:
+          type: string
+        chain_id:
+          type: integer
+        safe_address:
+          type: string
+        nonce:
+          type: string
+        init_data:
+          type: object
+      required:
+      - chain
+      - chain_id
+      - safe_address
+    AgentSelfResponse:
+      example:
+        shroud_config:
+          encoding_detection:
+            detect_hex: true
+            action: warn
+            detect_base64: true
+            enabled: true
+            detect_unicode_escape: true
+          enable_response_filtering: true
+          max_requests_per_day: 2
+          daily_budget_usd: 7.061401241503109
+          threat_logging: true
+          social_engineering_detection:
+            action: warn
+            sensitivity: medium
+            enabled: true
+          pii_policy: redact
+          network_detection:
+            allowed_domains:
+            - allowed_domains
+            - allowed_domains
+            blocked_domains:
+            - blocked_domains
+            - blocked_domains
+            action: warn
+            enabled: true
+          context_injection_threshold: 0.14658129805029452
+          enable_secret_redaction: true
+          command_injection_detection:
+            patterns: default
+            action: block
+            custom_patterns:
+            - custom_patterns
+            - custom_patterns
+            enabled: true
+          denied_models:
+          - denied_models
+          - denied_models
+          allowed_providers:
+          - allowed_providers
+          - allowed_providers
+          max_tokens_per_request: 5
+          max_requests_per_minute: 5
+          filesystem_detection:
+            blocked_paths:
+            - blocked_paths
+            - blocked_paths
+            action: log
+            enabled: false
+          injection_threshold: 0.6027456183070403
+          unicode_normalization:
+            normalization_form: NFKC
+            strip_zero_width: true
+            normalize_homoglyphs: true
+            enabled: true
+          sanitization_mode: block
+          allowed_models:
+          - allowed_models
+          - allowed_models
+        is_active: true
+        description: description
+        created_at: 2000-01-23T04:56:07.000+00:00
+        intents_api_enabled: true
+        created_by: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        shroud_enabled: true
+        ssh_public_key: ssh_public_key
+        ecdh_public_key: ecdh_public_key
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        last_active_at: 2000-01-23T04:56:07.000+00:00
+        org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        name: name
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        scopes:
+        - scopes
+        - scopes
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        org_id:
+          format: uuid
+          type: string
+        scopes:
+          items:
+            type: string
+          type: array
+        is_active:
+          type: boolean
+        intents_api_enabled:
+          type: boolean
+        created_by:
+          format: uuid
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        last_active_at:
+          format: date-time
+          type: string
+        ssh_public_key:
+          description: Ed25519 SSH public key (base64-encoded)
+          type: string
+        ecdh_public_key:
+          description: P-256 ECDH public key (base64 SEC1 uncompressed point)
+          type: string
+        shroud_enabled:
+          description: Whether this agent routes LLM traffic through the Shroud TEE
+            proxy
+          type: boolean
+        shroud_config:
+          $ref: "#/components/schemas/ShroudConfig"
+    ShroudConfig:
+      description: Per-agent Shroud LLM Proxy configuration
+      example:
+        encoding_detection:
+          detect_hex: true
+          action: warn
+          detect_base64: true
+          enabled: true
+          detect_unicode_escape: true
+        enable_response_filtering: true
+        max_requests_per_day: 2
+        daily_budget_usd: 7.061401241503109
+        threat_logging: true
+        social_engineering_detection:
+          action: warn
+          sensitivity: medium
+          enabled: true
+        pii_policy: redact
+        network_detection:
+          allowed_domains:
+          - allowed_domains
+          - allowed_domains
+          blocked_domains:
+          - blocked_domains
+          - blocked_domains
+          action: warn
+          enabled: true
+        context_injection_threshold: 0.14658129805029452
+        enable_secret_redaction: true
+        command_injection_detection:
+          patterns: default
+          action: block
+          custom_patterns:
+          - custom_patterns
+          - custom_patterns
+          enabled: true
+        denied_models:
+        - denied_models
+        - denied_models
+        allowed_providers:
+        - allowed_providers
+        - allowed_providers
+        max_tokens_per_request: 5
+        max_requests_per_minute: 5
+        filesystem_detection:
+          blocked_paths:
+          - blocked_paths
+          - blocked_paths
+          action: log
+          enabled: false
+        injection_threshold: 0.6027456183070403
+        unicode_normalization:
+          normalization_form: NFKC
+          strip_zero_width: true
+          normalize_homoglyphs: true
+          enabled: true
+        sanitization_mode: block
+        allowed_models:
+        - allowed_models
+        - allowed_models
+      properties:
+        pii_policy:
+          default: redact
+          description: How PII detections are handled
+          enum:
+          - block
+          - redact
+          - warn
+          - allow
+          type: string
+        injection_threshold:
+          default: 0.7
+          description: Prompt injection score threshold (0.0–1.0). Requests above
+            are blocked
+          maximum: 1
+          minimum: 0
+          type: number
+        context_injection_threshold:
+          default: 0.7
+          description: Context injection score threshold (0.0–1.0)
+          maximum: 1
+          minimum: 0
+          type: number
+        allowed_providers:
+          description: LLM providers this agent may use (empty = all)
+          items:
+            type: string
+          type: array
+        allowed_models:
+          description: Specific models allowed (empty = all)
+          items:
+            type: string
+          type: array
+        denied_models:
+          description: Models explicitly blocked
+          items:
+            type: string
+          type: array
+        max_tokens_per_request:
+          description: Maximum input tokens per request
+          type: integer
+        max_requests_per_minute:
+          description: Rate limit (requests per minute)
+          type: integer
+        max_requests_per_day:
+          description: Rate limit (requests per day)
+          type: integer
+        daily_budget_usd:
+          description: Daily LLM spend cap in USD (0 = unlimited)
+          type: number
+        enable_secret_redaction:
+          default: true
+          description: Whether vault secrets are redacted from prompts/responses
+          type: boolean
+        enable_response_filtering:
+          default: true
+          description: Whether response credential scanning is active
+          type: boolean
+        unicode_normalization:
+          $ref: "#/components/schemas/UnicodeNormalizationConfig"
+        command_injection_detection:
+          $ref: "#/components/schemas/CommandInjectionConfig"
+        social_engineering_detection:
+          $ref: "#/components/schemas/SocialEngineeringConfig"
+        encoding_detection:
+          $ref: "#/components/schemas/EncodingDetectionConfig"
+        network_detection:
+          $ref: "#/components/schemas/NetworkDetectionConfig"
+        filesystem_detection:
+          $ref: "#/components/schemas/FilesystemDetectionConfig"
+        sanitization_mode:
+          default: block
+          description: "Global behavior when threats are detected (block=reject, surgical=remove\
+            \ only malicious parts, log_only=audit without action)"
+          enum:
+          - block
+          - surgical
+          - log_only
+          type: string
+        threat_logging:
+          default: true
+          description: Whether to log all detected threats to audit (even when action
+            is allow/warn)
+          type: boolean
+    UnicodeNormalizationConfig:
+      description: Unicode normalization and homoglyph detection settings
+      example:
+        normalization_form: NFKC
+        strip_zero_width: true
+        normalize_homoglyphs: true
+        enabled: true
+      properties:
+        enabled:
+          default: true
+          description: Enable Unicode normalization
+          type: boolean
+        strip_zero_width:
+          default: true
+          description: Remove zero-width and invisible Unicode characters
+          type: boolean
+        normalize_homoglyphs:
+          default: true
+          description: "Replace look-alike characters (e.g., Cyrillic а → Latin a)"
+          type: boolean
+        normalization_form:
+          default: NFKC
+          description: Unicode normalization form to apply
+          enum:
+          - NFC
+          - NFKC
+          - NFD
+          - NFKD
+          type: string
+    CommandInjectionConfig:
+      description: Shell/command injection detection settings
+      example:
+        patterns: default
+        action: block
+        custom_patterns:
+        - custom_patterns
+        - custom_patterns
+        enabled: true
+      properties:
+        enabled:
+          default: true
+          description: Enable command injection detection
+          type: boolean
+        action:
+          default: block
+          description: Action when command injection is detected
+          enum:
+          - block
+          - sanitize
+          - warn
+          - log
+          type: string
+        patterns:
+          default: default
+          description: Pattern strictness level
+          enum:
+          - default
+          - strict
+          - custom
+          type: string
+        custom_patterns:
+          description: Custom regex patterns for detection (only used when patterns=custom)
+          items:
+            type: string
+          type: array
+    SocialEngineeringConfig:
+      description: Social engineering and manipulation detection settings
+      example:
+        action: warn
+        sensitivity: medium
+        enabled: true
+      properties:
+        enabled:
+          default: true
+          description: Enable social engineering detection
+          type: boolean
+        action:
+          default: warn
+          description: Action when manipulation attempts are detected
+          enum:
+          - block
+          - warn
+          - log
+          type: string
+        sensitivity:
+          default: medium
+          description: Detection sensitivity level
+          enum:
+          - low
+          - medium
+          - high
+          type: string
+    EncodingDetectionConfig:
+      description: Encoding/obfuscation detection settings
+      example:
+        detect_hex: true
+        action: warn
+        detect_base64: true
+        enabled: true
+        detect_unicode_escape: true
+      properties:
+        enabled:
+          default: true
+          description: Enable encoding detection
+          type: boolean
+        action:
+          default: warn
+          description: Action when obfuscated content is detected
+          enum:
+          - block
+          - decode
+          - warn
+          - log
+          type: string
+        detect_base64:
+          default: true
+          description: Detect Base64-encoded content
+          type: boolean
+        detect_hex:
+          default: true
+          description: "Detect hex-encoded content (\\\\x41, 0x41)"
+          type: boolean
+        detect_unicode_escape:
+          default: true
+          description: Detect Unicode escape sequences (\\u0041)
+          type: boolean
+    NetworkDetectionConfig:
+      description: Suspicious URL/domain detection settings
+      example:
+        allowed_domains:
+        - allowed_domains
+        - allowed_domains
+        blocked_domains:
+        - blocked_domains
+        - blocked_domains
+        action: warn
+        enabled: true
+      properties:
+        enabled:
+          default: true
+          description: Enable network/URL detection
+          type: boolean
+        action:
+          default: warn
+          description: Action when suspicious URLs are detected
+          enum:
+          - block
+          - warn
+          - log
+          type: string
+        blocked_domains:
+          description: "Domains to always block (e.g., pastebin.com, ngrok.io)"
+          items:
+            type: string
+          type: array
+        allowed_domains:
+          description: Domains to always allow (allowlist mode when non-empty)
+          items:
+            type: string
+          type: array
+    FilesystemDetectionConfig:
+      description: Filesystem path detection settings
+      example:
+        blocked_paths:
+        - blocked_paths
+        - blocked_paths
+        action: log
+        enabled: false
+      properties:
+        enabled:
+          default: false
+          description: Enable filesystem path detection (disabled by default as it
+            can be noisy)
+          type: boolean
+        action:
+          default: log
+          description: Action when filesystem paths are detected
+          enum:
+          - block
+          - sanitize
+          - warn
+          - log
+          type: string
+        blocked_paths:
+          description: "Path patterns to block (e.g., /etc/passwd, ~/.ssh)"
+          items:
+            type: string
+          type: array
+    AgentCreatedResponse:
+      example:
+        agent:
+          smart_accounts:
+          - chain: chain
+            chain_id: 9
+            init_data: "{}"
+            created_at: 2000-01-23T04:56:07.000+00:00
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            safe_address: safe_address
+            nonce: nonce
+          - chain: chain
+            chain_id: 9
+            init_data: "{}"
+            created_at: 2000-01-23T04:56:07.000+00:00
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            safe_address: safe_address
+            nonce: nonce
+          shroud_config:
+            encoding_detection:
+              detect_hex: true
+              action: warn
+              detect_base64: true
+              enabled: true
+              detect_unicode_escape: true
+            enable_response_filtering: true
+            max_requests_per_day: 2
+            daily_budget_usd: 7.061401241503109
+            threat_logging: true
+            social_engineering_detection:
+              action: warn
+              sensitivity: medium
+              enabled: true
+            pii_policy: redact
+            network_detection:
+              allowed_domains:
+              - allowed_domains
+              - allowed_domains
+              blocked_domains:
+              - blocked_domains
+              - blocked_domains
+              action: warn
+              enabled: true
+            context_injection_threshold: 0.14658129805029452
+            enable_secret_redaction: true
+            command_injection_detection:
+              patterns: default
+              action: block
+              custom_patterns:
+              - custom_patterns
+              - custom_patterns
+              enabled: true
+            denied_models:
+            - denied_models
+            - denied_models
+            allowed_providers:
+            - allowed_providers
+            - allowed_providers
+            max_tokens_per_request: 5
+            max_requests_per_minute: 5
+            filesystem_detection:
+              blocked_paths:
+              - blocked_paths
+              - blocked_paths
+              action: log
+              enabled: false
+            injection_threshold: 0.6027456183070403
+            unicode_normalization:
+              normalization_form: NFKC
+              strip_zero_width: true
+              normalize_homoglyphs: true
+              enabled: true
+            sanitization_mode: block
+            allowed_models:
+            - allowed_models
+            - allowed_models
+          is_active: true
+          description: description
+          oidc_client_id: oidc_client_id
+          created_at: 2000-01-23T04:56:07.000+00:00
+          intents_api_enabled: true
+          token_ttl_seconds: 0
+          shroud_enabled: true
+          ssh_public_key: ssh_public_key
+          ecdh_public_key: ecdh_public_key
+          auth_method: api_key
+          client_cert_fingerprint: client_cert_fingerprint
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          tx_allowed_chains:
+          - tx_allowed_chains
+          - tx_allowed_chains
+          tx_daily_limit_eth: tx_daily_limit_eth
+          last_active_at: 2000-01-23T04:56:07.000+00:00
+          name: name
+          tx_max_value_eth: tx_max_value_eth
+          vault_ids:
+          - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          scopes:
+          - scopes
+          - scopes
+          tx_to_allowlist:
+          - tx_to_allowlist
+          - tx_to_allowlist
+          oidc_issuer: oidc_issuer
+        api_key: api_key
+      properties:
+        agent:
+          $ref: "#/components/schemas/AgentResponse"
+        api_key:
+          description: One-time API key (only present for api_key auth method)
+          type: string
+      required:
+      - agent
+    AgentListResponse:
+      example:
+        agents:
+        - smart_accounts:
+          - chain: chain
+            chain_id: 9
+            init_data: "{}"
+            created_at: 2000-01-23T04:56:07.000+00:00
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            safe_address: safe_address
+            nonce: nonce
+          - chain: chain
+            chain_id: 9
+            init_data: "{}"
+            created_at: 2000-01-23T04:56:07.000+00:00
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            safe_address: safe_address
+            nonce: nonce
+          shroud_config:
+            encoding_detection:
+              detect_hex: true
+              action: warn
+              detect_base64: true
+              enabled: true
+              detect_unicode_escape: true
+            enable_response_filtering: true
+            max_requests_per_day: 2
+            daily_budget_usd: 7.061401241503109
+            threat_logging: true
+            social_engineering_detection:
+              action: warn
+              sensitivity: medium
+              enabled: true
+            pii_policy: redact
+            network_detection:
+              allowed_domains:
+              - allowed_domains
+              - allowed_domains
+              blocked_domains:
+              - blocked_domains
+              - blocked_domains
+              action: warn
+              enabled: true
+            context_injection_threshold: 0.14658129805029452
+            enable_secret_redaction: true
+            command_injection_detection:
+              patterns: default
+              action: block
+              custom_patterns:
+              - custom_patterns
+              - custom_patterns
+              enabled: true
+            denied_models:
+            - denied_models
+            - denied_models
+            allowed_providers:
+            - allowed_providers
+            - allowed_providers
+            max_tokens_per_request: 5
+            max_requests_per_minute: 5
+            filesystem_detection:
+              blocked_paths:
+              - blocked_paths
+              - blocked_paths
+              action: log
+              enabled: false
+            injection_threshold: 0.6027456183070403
+            unicode_normalization:
+              normalization_form: NFKC
+              strip_zero_width: true
+              normalize_homoglyphs: true
+              enabled: true
+            sanitization_mode: block
+            allowed_models:
+            - allowed_models
+            - allowed_models
+          is_active: true
+          description: description
+          oidc_client_id: oidc_client_id
+          created_at: 2000-01-23T04:56:07.000+00:00
+          intents_api_enabled: true
+          token_ttl_seconds: 0
+          shroud_enabled: true
+          ssh_public_key: ssh_public_key
+          ecdh_public_key: ecdh_public_key
+          auth_method: api_key
+          client_cert_fingerprint: client_cert_fingerprint
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          tx_allowed_chains:
+          - tx_allowed_chains
+          - tx_allowed_chains
+          tx_daily_limit_eth: tx_daily_limit_eth
+          last_active_at: 2000-01-23T04:56:07.000+00:00
+          name: name
+          tx_max_value_eth: tx_max_value_eth
+          vault_ids:
+          - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          scopes:
+          - scopes
+          - scopes
+          tx_to_allowlist:
+          - tx_to_allowlist
+          - tx_to_allowlist
+          oidc_issuer: oidc_issuer
+        - smart_accounts:
+          - chain: chain
+            chain_id: 9
+            init_data: "{}"
+            created_at: 2000-01-23T04:56:07.000+00:00
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            safe_address: safe_address
+            nonce: nonce
+          - chain: chain
+            chain_id: 9
+            init_data: "{}"
+            created_at: 2000-01-23T04:56:07.000+00:00
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            safe_address: safe_address
+            nonce: nonce
+          shroud_config:
+            encoding_detection:
+              detect_hex: true
+              action: warn
+              detect_base64: true
+              enabled: true
+              detect_unicode_escape: true
+            enable_response_filtering: true
+            max_requests_per_day: 2
+            daily_budget_usd: 7.061401241503109
+            threat_logging: true
+            social_engineering_detection:
+              action: warn
+              sensitivity: medium
+              enabled: true
+            pii_policy: redact
+            network_detection:
+              allowed_domains:
+              - allowed_domains
+              - allowed_domains
+              blocked_domains:
+              - blocked_domains
+              - blocked_domains
+              action: warn
+              enabled: true
+            context_injection_threshold: 0.14658129805029452
+            enable_secret_redaction: true
+            command_injection_detection:
+              patterns: default
+              action: block
+              custom_patterns:
+              - custom_patterns
+              - custom_patterns
+              enabled: true
+            denied_models:
+            - denied_models
+            - denied_models
+            allowed_providers:
+            - allowed_providers
+            - allowed_providers
+            max_tokens_per_request: 5
+            max_requests_per_minute: 5
+            filesystem_detection:
+              blocked_paths:
+              - blocked_paths
+              - blocked_paths
+              action: log
+              enabled: false
+            injection_threshold: 0.6027456183070403
+            unicode_normalization:
+              normalization_form: NFKC
+              strip_zero_width: true
+              normalize_homoglyphs: true
+              enabled: true
+            sanitization_mode: block
+            allowed_models:
+            - allowed_models
+            - allowed_models
+          is_active: true
+          description: description
+          oidc_client_id: oidc_client_id
+          created_at: 2000-01-23T04:56:07.000+00:00
+          intents_api_enabled: true
+          token_ttl_seconds: 0
+          shroud_enabled: true
+          ssh_public_key: ssh_public_key
+          ecdh_public_key: ecdh_public_key
+          auth_method: api_key
+          client_cert_fingerprint: client_cert_fingerprint
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          tx_allowed_chains:
+          - tx_allowed_chains
+          - tx_allowed_chains
+          tx_daily_limit_eth: tx_daily_limit_eth
+          last_active_at: 2000-01-23T04:56:07.000+00:00
+          name: name
+          tx_max_value_eth: tx_max_value_eth
+          vault_ids:
+          - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          - 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          scopes:
+          - scopes
+          - scopes
+          tx_to_allowlist:
+          - tx_to_allowlist
+          - tx_to_allowlist
+          oidc_issuer: oidc_issuer
+      properties:
+        agents:
+          items:
+            $ref: "#/components/schemas/AgentResponse"
+          type: array
+    AgentKeyRotatedResponse:
+      example:
+        api_key: api_key
+      properties:
+        api_key:
+          type: string
+    SubmitTransactionRequest:
+      example:
+        gas_price: gas_price
+        mode: eoa
+        signing_key_path: signing_key_path
+        chain: chain
+        gas_limit: 6
+        max_priority_fee_per_gas: max_priority_fee_per_gas
+        data: data
+        max_fee_per_gas: max_fee_per_gas
+        to: to
+        value: value
+        nonce: 0
+        simulate_first: false
+      properties:
+        to:
+          description: Destination address (0x-prefixed)
+          type: string
+        value:
+          description: Value in ETH
+          type: string
+        chain:
+          description: Chain name or numeric ID
+          type: string
+        data:
+          description: Hex-encoded calldata
+          type: string
+        signing_key_path:
+          type: string
+        nonce:
+          type: integer
+        gas_price:
+          type: string
+        gas_limit:
+          type: integer
+        max_fee_per_gas:
+          type: string
+        max_priority_fee_per_gas:
+          type: string
+        simulate_first:
+          default: false
+          type: boolean
+        mode:
+          default: eoa
+          description: Transaction mode
+          enum:
+          - eoa
+          - smart_account
+          type: string
+      required:
+      - chain
+      - to
+      - value
+    SignTransactionRequest:
+      example:
+        gas_price: gas_price
+        signing_key_path: signing_key_path
+        chain: chain
+        gas_limit: 6
+        max_priority_fee_per_gas: max_priority_fee_per_gas
+        data: data
+        max_fee_per_gas: max_fee_per_gas
+        to: to
+        value: value
+        nonce: 0
+        simulate_first: false
+      properties:
+        to:
+          description: Destination address (0x-prefixed)
+          type: string
+        value:
+          description: Value in ETH
+          type: string
+        chain:
+          description: Chain name or numeric ID
+          type: string
+        data:
+          description: Hex-encoded calldata
+          type: string
+        signing_key_path:
+          type: string
+        nonce:
+          type: integer
+        gas_price:
+          type: string
+        gas_limit:
+          type: integer
+        max_fee_per_gas:
+          type: string
+        max_priority_fee_per_gas:
+          type: string
+        simulate_first:
+          default: false
+          type: boolean
+      required:
+      - chain
+      - to
+      - value
+    SignTransactionResponse:
+      example:
+        chain: chain
+        chain_id: 0
+        simulation_status: simulation_status
+        signed_tx: signed_tx
+        tx_hash: tx_hash
+        value_wei: value_wei
+        nonce: 6
+        max_priority_fee_per_gas: max_priority_fee_per_gas
+        max_fee_per_gas: max_fee_per_gas
+        from: from
+        simulation_id: simulation_id
+        to: to
+        status: sign_only
+      properties:
+        signed_tx:
+          description: Raw signed transaction hex (always included)
+          type: string
+        tx_hash:
+          type: string
+        from:
+          description: Derived sender address
+          type: string
+        to:
+          type: string
+        chain:
+          type: string
+        chain_id:
+          type: integer
+        nonce:
+          type: integer
+        value_wei:
+          type: string
+        status:
+          enum:
+          - sign_only
+          type: string
+        simulation_id:
+          type: string
+        simulation_status:
+          type: string
+        max_fee_per_gas:
+          type: string
+        max_priority_fee_per_gas:
+          type: string
+    SimulateTransactionRequest:
+      example:
+        signing_key_path: signing_key_path
+        chain: chain
+        gas_limit: 0
+        data: data
+        to: to
+        value: value
+      properties:
+        to:
+          type: string
+        value:
+          type: string
+        chain:
+          type: string
+        data:
+          type: string
+        signing_key_path:
+          type: string
+        gas_limit:
+          type: integer
+      required:
+      - chain
+      - to
+      - value
+    SimulateBundleRequest:
+      example:
+        transactions:
+        - signing_key_path: signing_key_path
+          chain: chain
+          gas_limit: 0
+          data: data
+          to: to
+          value: value
+        - signing_key_path: signing_key_path
+          chain: chain
+          gas_limit: 0
+          data: data
+          to: to
+          value: value
+      properties:
+        transactions:
+          items:
+            $ref: "#/components/schemas/SimulateTransactionRequest"
+          type: array
+      required:
+      - transactions
+    TransactionResponse:
+      example:
+        error_message: error_message
+        chain: chain
+        agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        chain_id: 0
+        simulation_status: simulation_status
+        tenderly_dashboard_url: https://openapi-generator.tech
+        signed_tx: signed_tx
+        created_at: 2000-01-23T04:56:07.000+00:00
+        tx_hash: tx_hash
+        value_wei: value_wei
+        max_priority_fee_per_gas: max_priority_fee_per_gas
+        signed_at: 2000-01-23T04:56:07.000+00:00
+        max_fee_per_gas: max_fee_per_gas
+        simulation_id: simulation_id
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        to: to
+        status: pending
+      properties:
+        id:
+          format: uuid
+          type: string
+        agent_id:
+          format: uuid
+          type: string
+        chain:
+          type: string
+        chain_id:
+          type: integer
+        to:
+          type: string
+        value_wei:
+          type: string
+        status:
+          enum:
+          - pending
+          - signed
+          - sign_only
+          - broadcast
+          - failed
+          - simulation_failed
+          type: string
+        signed_tx:
+          description: |
+            Raw signed transaction hex. On GET list and GET by id, this property is omitted by default (absent from the response). Pass `include_signed_tx=true` on those endpoints to include it. Always present on the initial POST submit response.
+          type: string
+          nullable: true
+        tx_hash:
+          type: string
+        error_message:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        signed_at:
+          format: date-time
+          type: string
+        simulation_id:
+          type: string
+        simulation_status:
+          type: string
+        tenderly_dashboard_url:
+          format: uri
+          type: string
+        max_fee_per_gas:
+          type: string
+        max_priority_fee_per_gas:
+          type: string
+    TransactionListResponse:
+      example:
+        transactions:
+        - error_message: error_message
+          chain: chain
+          agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          chain_id: 0
+          simulation_status: simulation_status
+          tenderly_dashboard_url: https://openapi-generator.tech
+          signed_tx: signed_tx
+          created_at: 2000-01-23T04:56:07.000+00:00
+          tx_hash: tx_hash
+          value_wei: value_wei
+          max_priority_fee_per_gas: max_priority_fee_per_gas
+          signed_at: 2000-01-23T04:56:07.000+00:00
+          max_fee_per_gas: max_fee_per_gas
+          simulation_id: simulation_id
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          to: to
+          status: pending
+        - error_message: error_message
+          chain: chain
+          agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          chain_id: 0
+          simulation_status: simulation_status
+          tenderly_dashboard_url: https://openapi-generator.tech
+          signed_tx: signed_tx
+          created_at: 2000-01-23T04:56:07.000+00:00
+          tx_hash: tx_hash
+          value_wei: value_wei
+          max_priority_fee_per_gas: max_priority_fee_per_gas
+          signed_at: 2000-01-23T04:56:07.000+00:00
+          max_fee_per_gas: max_fee_per_gas
+          simulation_id: simulation_id
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          to: to
+          status: pending
+      properties:
+        transactions:
+          items:
+            $ref: "#/components/schemas/TransactionResponse"
+          type: array
+    BalanceChange:
+      example:
+        address: address
+        before: before
+        change: change
+        token_symbol: token_symbol
+        after: after
+        token: token
+      properties:
+        address:
+          type: string
+        token:
+          type: string
+        token_symbol:
+          type: string
+        before:
+          type: string
+        after:
+          type: string
+        change:
+          type: string
+    SimulationResponse:
+      example:
+        simulated_at: 2000-01-23T04:56:07.000+00:00
+        balance_changes:
+        - address: address
+          before: before
+          change: change
+          token_symbol: token_symbol
+          after: after
+          token: token
+        - address: address
+          before: before
+          change: change
+          token_symbol: token_symbol
+          after: after
+          token: token
+        revert_reason: revert_reason
+        gas_used: 0
+        tenderly_dashboard_url: https://openapi-generator.tech
+        simulation_id: simulation_id
+        error_code: error_code
+        error_human_readable: error_human_readable
+        error: error
+        status: success
+        gas_estimate_usd: gas_estimate_usd
+      properties:
+        simulation_id:
+          type: string
+        status:
+          enum:
+          - success
+          - reverted
+          - error
+          type: string
+        gas_used:
+          type: integer
+        gas_estimate_usd:
+          type: string
+        balance_changes:
+          items:
+            $ref: "#/components/schemas/BalanceChange"
+          type: array
+        error:
+          type: string
+        error_code:
+          type: string
+        error_human_readable:
+          type: string
+        revert_reason:
+          type: string
+        tenderly_dashboard_url:
+          format: uri
+          type: string
+        simulated_at:
+          format: date-time
+          type: string
+    BundleSimulationResponse:
+      example:
+        simulations:
+        - simulated_at: 2000-01-23T04:56:07.000+00:00
+          balance_changes:
+          - address: address
+            before: before
+            change: change
+            token_symbol: token_symbol
+            after: after
+            token: token
+          - address: address
+            before: before
+            change: change
+            token_symbol: token_symbol
+            after: after
+            token: token
+          revert_reason: revert_reason
+          gas_used: 0
+          tenderly_dashboard_url: https://openapi-generator.tech
+          simulation_id: simulation_id
+          error_code: error_code
+          error_human_readable: error_human_readable
+          error: error
+          status: success
+          gas_estimate_usd: gas_estimate_usd
+        - simulated_at: 2000-01-23T04:56:07.000+00:00
+          balance_changes:
+          - address: address
+            before: before
+            change: change
+            token_symbol: token_symbol
+            after: after
+            token: token
+          - address: address
+            before: before
+            change: change
+            token_symbol: token_symbol
+            after: after
+            token: token
+          revert_reason: revert_reason
+          gas_used: 0
+          tenderly_dashboard_url: https://openapi-generator.tech
+          simulation_id: simulation_id
+          error_code: error_code
+          error_human_readable: error_human_readable
+          error: error
+          status: success
+          gas_estimate_usd: gas_estimate_usd
+      properties:
+        simulations:
+          items:
+            $ref: "#/components/schemas/SimulationResponse"
+          type: array
+    ChainResponse:
+      example:
+        rpc_url: rpc_url
+        is_enabled: true
+        is_testnet: true
+        chain_id: 0
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        name: name
+        native_currency: native_currency
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        display_name: display_name
+        ws_url: ws_url
+        explorer_url: explorer_url
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          type: string
+        display_name:
+          type: string
+        chain_id:
+          type: integer
+        rpc_url:
+          type: string
+        ws_url:
+          type: string
+        explorer_url:
+          type: string
+        native_currency:
+          type: string
+        is_testnet:
+          type: boolean
+        is_enabled:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+    ChainListResponse:
+      example:
+        chains:
+        - rpc_url: rpc_url
+          is_enabled: true
+          is_testnet: true
+          chain_id: 0
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          name: name
+          native_currency: native_currency
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          display_name: display_name
+          ws_url: ws_url
+          explorer_url: explorer_url
+        - rpc_url: rpc_url
+          is_enabled: true
+          is_testnet: true
+          chain_id: 0
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          name: name
+          native_currency: native_currency
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          display_name: display_name
+          ws_url: ws_url
+          explorer_url: explorer_url
+      properties:
+        chains:
+          items:
+            $ref: "#/components/schemas/ChainResponse"
+          type: array
+    CreateChainRequest:
+      example:
+        rpc_url: rpc_url
+        is_enabled: true
+        is_testnet: false
+        chain_id: 0
+        name: name
+        native_currency: ETH
+        display_name: display_name
+        ws_url: ws_url
+        explorer_url: explorer_url
+      properties:
+        name:
+          type: string
+        display_name:
+          type: string
+        chain_id:
+          type: integer
+        rpc_url:
+          type: string
+        ws_url:
+          type: string
+        explorer_url:
+          type: string
+        native_currency:
+          default: ETH
+          type: string
+        is_testnet:
+          default: false
+          type: boolean
+        is_enabled:
+          default: true
+          type: boolean
+      required:
+      - chain_id
+      - display_name
+      - name
+    UpdateChainRequest:
+      example:
+        rpc_url: rpc_url
+        is_enabled: true
+        is_testnet: true
+        native_currency: native_currency
+        display_name: display_name
+        ws_url: ws_url
+        explorer_url: explorer_url
+      properties:
+        display_name:
+          type: string
+        rpc_url:
+          type: string
+        ws_url:
+          type: string
+        explorer_url:
+          type: string
+        native_currency:
+          type: string
+        is_testnet:
+          type: boolean
+        is_enabled:
+          type: boolean
+    CreateShareRequest:
+      example:
+        recipient_type: user
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        permissions:
+        - permissions
+        - permissions
+        passphrase: passphrase
+        max_access_count: 0
+        ip_allowlist:
+        - ip_allowlist
+        - ip_allowlist
+        email: email
+        recipient_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        recipient_type:
+          enum:
+          - user
+          - agent
+          - external_email
+          - anyone_with_link
+          - creator
+          type: string
+        recipient_id:
+          format: uuid
+          type: string
+        email:
+          format: email
+          type: string
+        permissions:
+          items:
+            type: string
+          type: array
+        max_access_count:
+          type: integer
+        expires_at:
+          format: date-time
+          type: string
+        passphrase:
+          type: string
+        ip_allowlist:
+          items:
+            type: string
+          type: array
+      required:
+      - expires_at
+      - recipient_type
+    ShareResponse:
+      example:
+        recipient_type: recipient_type
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        share_url: https://openapi-generator.tech
+        recipient_email: recipient_email
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        max_access_count: 0
+      properties:
+        id:
+          format: uuid
+          type: string
+        share_url:
+          format: uri
+          type: string
+        recipient_type:
+          type: string
+        recipient_email:
+          type: string
+        expires_at:
+          format: date-time
+          type: string
+        max_access_count:
+          type: integer
+    SharedSecretResponse:
+      example:
+        path: path
+        access_count: 0
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        type: type
+        max_access_count: 6
+        value: value
+      properties:
+        id:
+          format: uuid
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+        value:
+          type: string
+        access_count:
+          type: integer
+        max_access_count:
+          type: integer
+    ShareListItem:
+      example:
+        recipient_type: recipient_type
+        is_accepted: true
+        expires_at: 2000-01-23T04:56:07.000+00:00
+        is_expired: true
+        recipient_email: recipient_email
+        created_at: 2000-01-23T04:56:07.000+00:00
+        access_count: 0
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        max_access_count: 6
+        secret_path: secret_path
+      properties:
+        id:
+          format: uuid
+          type: string
+        secret_path:
+          type: string
+        recipient_type:
+          type: string
+        recipient_email:
+          type: string
+        access_count:
+          type: integer
+        max_access_count:
+          type: integer
+        expires_at:
+          format: date-time
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        is_expired:
+          type: boolean
+        is_accepted:
+          type: boolean
+    ShareListResponse:
+      example:
+        shares:
+        - recipient_type: recipient_type
+          is_accepted: true
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          is_expired: true
+          recipient_email: recipient_email
+          created_at: 2000-01-23T04:56:07.000+00:00
+          access_count: 0
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          max_access_count: 6
+          secret_path: secret_path
+        - recipient_type: recipient_type
+          is_accepted: true
+          expires_at: 2000-01-23T04:56:07.000+00:00
+          is_expired: true
+          recipient_email: recipient_email
+          created_at: 2000-01-23T04:56:07.000+00:00
+          access_count: 0
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          max_access_count: 6
+          secret_path: secret_path
+      properties:
+        shares:
+          items:
+            $ref: "#/components/schemas/ShareListItem"
+          type: array
+    OrgMemberResponse:
+      example:
+        auth_method: auth_method
+        role: role
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        display_name: display_name
+        email: email
+      properties:
+        id:
+          format: uuid
+          type: string
+        email:
+          type: string
+        display_name:
+          type: string
+        role:
+          type: string
+        auth_method:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+    OrgMemberListResponse:
+      example:
+        members:
+        - auth_method: auth_method
+          role: role
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          display_name: display_name
+          email: email
+        - auth_method: auth_method
+          role: role
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          display_name: display_name
+          email: email
+      properties:
+        members:
+          items:
+            $ref: "#/components/schemas/OrgMemberResponse"
+          type: array
+    UpdateMemberRoleRequest:
+      example:
+        role: owner
+      properties:
+        role:
+          enum:
+          - owner
+          - admin
+          - member
+          type: string
+      required:
+      - role
+    InviteMemberRequest:
+      example:
+        role: role
+        email: email
+      properties:
+        email:
+          format: email
+          type: string
+        role:
+          type: string
+      required:
+      - email
+    InviteMemberResponse:
+      example:
+        message: message
+        email: email
+      properties:
+        message:
+          type: string
+        email:
+          type: string
+    AgentKeysVaultResponse:
+      example:
+        vault_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        vault_id:
+          format: uuid
+          type: string
+    UsageSummaryResponse:
+      example:
+        billing_tier: billing_tier
+        current_month:
+          paid_requests: 1
+          total_cost_usd: total_cost_usd
+          total_requests: 6
+          free_requests: 5
+        free_tier_limit: 0
+      properties:
+        billing_tier:
+          type: string
+        free_tier_limit:
+          type: integer
+        current_month:
+          $ref: "#/components/schemas/UsageSummaryResponse_current_month"
+    UsageHistoryResponse:
+      example:
+        events:
+        - price_usd: price_usd
+          endpoint: endpoint
+          status_code: 0
+          method: method
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          is_paid: true
+          principal_type: principal_type
+          principal_id: principal_id
+        - price_usd: price_usd
+          endpoint: endpoint
+          status_code: 0
+          method: method
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          is_paid: true
+          principal_type: principal_type
+          principal_id: principal_id
+      properties:
+        events:
+          items:
+            $ref: "#/components/schemas/UsageHistoryResponse_events_inner"
+          type: array
+    SubscribeRequest:
+      example:
+        tier: pro
+        interval: monthly
+        trial: true
+      properties:
+        tier:
+          enum:
+          - pro
+          - business
+          type: string
+        interval:
+          enum:
+          - monthly
+          - yearly
+          type: string
+        trial:
+          default: true
+          type: boolean
+      required:
+      - interval
+      - tier
+    TopupRequest:
+      example:
+        amount_usd: 84
+      properties:
+        amount_usd:
+          maximum: 1000
+          minimum: 5
+          type: integer
+      required:
+      - amount_usd
+    OverageMethodRequest:
+      example:
+        method: credits
+      properties:
+        method:
+          enum:
+          - credits
+          - x402
+          type: string
+      required:
+      - method
+    CheckoutUrlResponse:
+      example:
+        checkout_url: https://openapi-generator.tech
+      properties:
+        checkout_url:
+          format: uri
+          type: string
+    PortalUrlResponse:
+      example:
+        portal_url: https://openapi-generator.tech
+      properties:
+        portal_url:
+          format: uri
+          type: string
+    SubscriptionResponse:
+      example:
+        period_end: 2000-01-23T04:56:07.000+00:00
+        credit_balance_usd: credit_balance_usd
+        overage_method: overage_method
+        tier: tier
+        credit_balance_cents: 0
+        usage:
+          shares:
+            limit: 1
+            used: 6
+          vaults:
+            limit: 1
+            used: 6
+          team_members:
+            limit: 1
+            used: 6
+          requests:
+            limit: 1
+            used: 6
+          secrets:
+            limit: 1
+            used: 6
+          intent_transactions:
+            limit: 1
+            used: 6
+          agents:
+            limit: 1
+            used: 6
+        interval: interval
+        status: status
+      properties:
+        tier:
+          type: string
+        interval:
+          type: string
+        period_end:
+          format: date-time
+          type: string
+        status:
+          type: string
+        credit_balance_cents:
+          type: integer
+        credit_balance_usd:
+          type: string
+        overage_method:
+          type: string
+        usage:
+          $ref: "#/components/schemas/SubscriptionResponse_usage"
+    UsageMeter:
+      example:
+        limit: 1
+        used: 6
+      properties:
+        used:
+          type: integer
+        limit:
+          type: integer
+    LlmTokenBillingStatus:
+      example:
+        subscription_status: active
+        enabled: true
+      properties:
+        enabled:
+          type: boolean
+        subscription_status:
+          enum:
+          - active
+          - inactive
+          type: string
+    LlmCheckoutResponse:
+      example:
+        checkout_url: https://openapi-generator.tech
+      properties:
+        checkout_url:
+          format: uri
+          type: string
+    LlmDisableResponse:
+      example:
+        enabled: true
+      properties:
+        enabled:
+          type: boolean
+    CreditBalanceResponse:
+      example:
+        expiring_within_90_days:
+          earliest_expiry: 2000-01-23T04:56:07.000+00:00
+          amount_cents: 6
+        balance_usd: balance_usd
+        balance_cents: 0
+      properties:
+        balance_cents:
+          type: integer
+        balance_usd:
+          type: string
+        expiring_within_90_days:
+          $ref: "#/components/schemas/CreditBalanceResponse_expiring_within_90_days"
+    CreditTransactionsListResponse:
+      example:
+        limit: 5
+        page: 1
+        transactions:
+        - amount_cents: 0
+          balance_after_cents: 6
+          description: description
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          type: type
+        - amount_cents: 0
+          balance_after_cents: 6
+          description: description
+          created_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          type: type
+      properties:
+        transactions:
+          items:
+            $ref: "#/components/schemas/CreditTransactionsListResponse_transactions_inner"
+          type: array
+        page:
+          type: integer
+        limit:
+          type: integer
+    OverageMethodResponse:
+      example:
+        overage_method: overage_method
+      properties:
+        overage_method:
+          type: string
+    AuditEventsResponse:
+      example:
+        count: 0
+        events:
+        - actor_type: actor_type
+          org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          resource_type: resource_type
+          action: action
+          resource_id: resource_id
+          created_at: 2000-01-23T04:56:07.000+00:00
+          details:
+            key: ""
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          actor_id: actor_id
+          ip_address: ip_address
+        - actor_type: actor_type
+          org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          resource_type: resource_type
+          action: action
+          resource_id: resource_id
+          created_at: 2000-01-23T04:56:07.000+00:00
+          details:
+            key: ""
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          actor_id: actor_id
+          ip_address: ip_address
+      properties:
+        events:
+          items:
+            $ref: "#/components/schemas/AuditEvent"
+          type: array
+        count:
+          type: integer
+    AuditEvent:
+      example:
+        actor_type: actor_type
+        org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        resource_type: resource_type
+        action: action
+        resource_id: resource_id
+        created_at: 2000-01-23T04:56:07.000+00:00
+        details:
+          key: ""
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        actor_id: actor_id
+        ip_address: ip_address
+      properties:
+        id:
+          format: uuid
+          type: string
+        action:
+          type: string
+        actor_id:
+          type: string
+        actor_type:
+          type: string
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        org_id:
+          format: uuid
+          type: string
+        details:
+          additionalProperties: true
+          type: object
+        ip_address:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+    CreateIpRuleRequest:
+      example:
+        rule_type: allow
+        applies_to: applies_to
+        cidr: cidr
+        label: label
+      properties:
+        rule_type:
+          enum:
+          - allow
+          - deny
+          type: string
+        cidr:
+          type: string
+        label:
+          type: string
+        applies_to:
+          type: string
+      required:
+      - cidr
+      - rule_type
+    IpRuleResponse:
+      example:
+        rule_type: rule_type
+        applies_to: applies_to
+        org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        created_at: 2000-01-23T04:56:07.000+00:00
+        cidr: cidr
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        label: label
+        created_by: created_by
+      properties:
+        id:
+          format: uuid
+          type: string
+        org_id:
+          format: uuid
+          type: string
+        rule_type:
+          type: string
+        cidr:
+          type: string
+        label:
+          type: string
+        applies_to:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+    IpRulesListResponse:
+      example:
+        rules:
+        - rule_type: rule_type
+          applies_to: applies_to
+          org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_at: 2000-01-23T04:56:07.000+00:00
+          cidr: cidr
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          label: label
+          created_by: created_by
+        - rule_type: rule_type
+          applies_to: applies_to
+          org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_at: 2000-01-23T04:56:07.000+00:00
+          cidr: cidr
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          label: label
+          created_by: created_by
+      properties:
+        rules:
+          items:
+            $ref: "#/components/schemas/IpRuleResponse"
+          type: array
+    SettingResponse:
+      example:
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        updated_by: updated_by
+        value: value
+        key: key
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        updated_by:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+    SettingsListResponse:
+      example:
+        settings:
+        - updated_at: 2000-01-23T04:56:07.000+00:00
+          updated_by: updated_by
+          value: value
+          key: key
+        - updated_at: 2000-01-23T04:56:07.000+00:00
+          updated_by: updated_by
+          value: value
+          key: key
+      properties:
+        settings:
+          items:
+            $ref: "#/components/schemas/SettingResponse"
+          type: array
+    UpdateSettingRequest:
+      example:
+        value: value
+      properties:
+        value:
+          type: string
+      required:
+      - value
+    X402ConfigResponse:
+      example:
+        facilitator_url: facilitator_url
+        scheme: scheme
+        free_tier_limit: 0
+        pay_to: pay_to
+        network: network
+      properties:
+        pay_to:
+          type: string
+        network:
+          type: string
+        scheme:
+          type: string
+        free_tier_limit:
+          type: integer
+        facilitator_url:
+          type: string
+    AdminUsersListResponse:
+      example:
+        total: 1
+        users:
+        - billing_tier: billing_tier
+          free_tier_override: 0
+          auth_method: auth_method
+          role: role
+          org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_at: 2000-01-23T04:56:07.000+00:00
+          is_sponsored: true
+          current_month_requests: 6
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          display_name: display_name
+          org_name: org_name
+          email: email
+        - billing_tier: billing_tier
+          free_tier_override: 0
+          auth_method: auth_method
+          role: role
+          org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          created_at: 2000-01-23T04:56:07.000+00:00
+          is_sponsored: true
+          current_month_requests: 6
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          display_name: display_name
+          org_name: org_name
+          email: email
+      properties:
+        users:
+          items:
+            $ref: "#/components/schemas/AdminUsersListResponse_users_inner"
+          type: array
+        total:
+          type: integer
+    UpdateOrgLimitsRequest:
+      example:
+        free_tier_override: 0
+        is_sponsored: true
+      properties:
+        free_tier_override:
+          type: integer
+        is_sponsored:
+          type: boolean
+    OrgLimitsResponse:
+      example:
+        free_tier_override: 0
+        org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        is_sponsored: true
+      properties:
+        org_id:
+          format: uuid
+          type: string
+        free_tier_override:
+          type: integer
+        is_sponsored:
+          type: boolean
+    SetBillingTierRequest:
+      example:
+        tier: free
+        duration_days: 293
+      properties:
+        tier:
+          enum:
+          - free
+          - pro
+          - business
+          - enterprise
+          type: string
+        duration_days:
+          description: How many days the tier lasts (default 365). Use 90 for a 3-month
+            trial.
+          maximum: 3650
+          minimum: 1
+          type: integer
+      required:
+      - tier
+    CreateTreasuryRequest:
+      example:
+        signers:
+        - signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          signer_address: signer_address
+          signer_type: user
+        - signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          signer_address: signer_address
+          signer_type: user
+        chain: chain
+        chain_id: 0
+        name: name
+        threshold: 1
+        safe_address: safe_address
+      properties:
+        name:
+          description: Display name (1–128 characters)
+          type: string
+        safe_address:
+          description: "Deployed Safe contract address (0x-prefixed, 42 characters)"
+          type: string
+        chain:
+          description: Chain name (default base)
+          type: string
+        chain_id:
+          description: EVM chain ID (default 8453 for Base)
+          type: integer
+        threshold:
+          description: Safe threshold (default 1)
+          minimum: 1
+          type: integer
+        signers:
+          items:
+            $ref: "#/components/schemas/CreateTreasurySignerEntry"
+          type: array
+      required:
+      - name
+      - safe_address
+    CreateTreasurySignerEntry:
+      example:
+        signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        signer_address: signer_address
+        signer_type: user
+      properties:
+        signer_type:
+          enum:
+          - user
+          - agent
+          type: string
+        signer_id:
+          format: uuid
+          type: string
+        signer_address:
+          description: EVM address (0x-prefixed)
+          type: string
+      required:
+      - signer_address
+      - signer_id
+      - signer_type
+    UpdateTreasuryRequest:
+      example:
+        name: name
+        threshold: 1
+      properties:
+        name:
+          type: string
+        threshold:
+          minimum: 1
+          type: integer
+    TreasuryResponse:
+      example:
+        signers:
+        - added_at: 2000-01-23T04:56:07.000+00:00
+          signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          signer_address: signer_address
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          signer_type: user
+        - added_at: 2000-01-23T04:56:07.000+00:00
+          signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          signer_address: signer_address
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          signer_type: user
+        chain: chain
+        chain_id: 0
+        name: name
+        created_at: 2000-01-23T04:56:07.000+00:00
+        threshold: 6
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        safe_address: safe_address
+        created_by: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          type: string
+        safe_address:
+          type: string
+        chain:
+          type: string
+        chain_id:
+          type: integer
+        threshold:
+          type: integer
+        created_by:
+          format: uuid
+          type: string
+        signers:
+          items:
+            $ref: "#/components/schemas/TreasurySignerResponse"
+          type: array
+        created_at:
+          format: date-time
+          type: string
+    TreasurySignerResponse:
+      example:
+        added_at: 2000-01-23T04:56:07.000+00:00
+        signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        signer_address: signer_address
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        signer_type: user
+      properties:
+        id:
+          format: uuid
+          type: string
+        signer_type:
+          enum:
+          - user
+          - agent
+          type: string
+        signer_id:
+          format: uuid
+          type: string
+        signer_address:
+          type: string
+        added_at:
+          format: date-time
+          type: string
+    AddSignerRequest:
+      example:
+        signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        signer_address: signer_address
+        signer_type: user
+      properties:
+        signer_type:
+          enum:
+          - user
+          - agent
+          type: string
+        signer_id:
+          format: uuid
+          type: string
+        signer_address:
+          type: string
+      required:
+      - signer_address
+      - signer_id
+      - signer_type
+    AccessRequestResponse:
+      example:
+        reason: reason
+        resolved_by: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        resolved_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        treasury_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        status: pending
+        requested_at: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          format: uuid
+          type: string
+        treasury_id:
+          format: uuid
+          type: string
+        agent_id:
+          format: uuid
+          type: string
+        status:
+          enum:
+          - pending
+          - approved
+          - denied
+          type: string
+        reason:
+          type: string
+        requested_at:
+          format: date-time
+          type: string
+        resolved_by:
+          format: uuid
+          type: string
+        resolved_at:
+          format: date-time
+          type: string
+    PaymentRequirement:
+      example:
+        accepts:
+        - scheme: scheme
+          price: price
+          requiredDeadlineSeconds: 1
+          payTo: payTo
+          network: network
+        - scheme: scheme
+          price: price
+          requiredDeadlineSeconds: 1
+          payTo: payTo
+          network: network
+        x402Version: 6
+        description: description
+      properties:
+        x402Version:
+          type: integer
+        accepts:
+          items:
+            $ref: "#/components/schemas/PaymentRequirement_accepts_inner"
+          type: array
+        description:
+          type: string
+    HealthResponse:
+      example:
+        version: version
+        status: healthy
+      properties:
+        status:
+          enum:
+          - healthy
+          - degraded
+          type: string
+        version:
+          type: string
+    refreshToken_request:
+      properties:
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+    getJwtPublicKey_200_response:
+      example:
+        public_key_base64: public_key_base64
+        alg: EdDSA
+      properties:
+        alg:
+          example: EdDSA
+          type: string
+        public_key_base64:
+          description: Base64-encoded Ed25519 public key
+          type: string
+      required:
+      - alg
+      - public_key_base64
+    verifyEmail_request:
+      properties:
+        token:
+          type: string
+      required:
+      - token
+    deleteMe_request:
+      properties:
+        confirmation:
+          description: Must be "DELETE MY ACCOUNT"
+          type: string
+      required:
+      - confirmation
+    listTreasuries_200_response:
+      example:
+        treasuries:
+        - signers:
+          - added_at: 2000-01-23T04:56:07.000+00:00
+            signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_address: signer_address
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_type: user
+          - added_at: 2000-01-23T04:56:07.000+00:00
+            signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_address: signer_address
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_type: user
+          chain: chain
+          chain_id: 0
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          threshold: 6
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          safe_address: safe_address
+          created_by: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - signers:
+          - added_at: 2000-01-23T04:56:07.000+00:00
+            signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_address: signer_address
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_type: user
+          - added_at: 2000-01-23T04:56:07.000+00:00
+            signer_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_address: signer_address
+            id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            signer_type: user
+          chain: chain
+          chain_id: 0
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          threshold: 6
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          safe_address: safe_address
+          created_by: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        treasuries:
+          items:
+            $ref: "#/components/schemas/TreasuryResponse"
+          type: array
+    listTreasuryAccessRequests_200_response:
+      example:
+        requests:
+        - reason: reason
+          resolved_by: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          resolved_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          treasury_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          status: pending
+          requested_at: 2000-01-23T04:56:07.000+00:00
+        - reason: reason
+          resolved_by: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          agent_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          resolved_at: 2000-01-23T04:56:07.000+00:00
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          treasury_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          status: pending
+          requested_at: 2000-01-23T04:56:07.000+00:00
+      properties:
+        requests:
+          items:
+            $ref: "#/components/schemas/AccessRequestResponse"
+          type: array
+    healthHsm_200_response:
+      example:
+        status: ok
+      properties:
+        status:
+          enum:
+          - ok
+          - degraded
+          - unavailable
+          type: string
+    UsageSummaryResponse_current_month:
+      example:
+        paid_requests: 1
+        total_cost_usd: total_cost_usd
+        total_requests: 6
+        free_requests: 5
+      properties:
+        total_requests:
+          type: integer
+        paid_requests:
+          type: integer
+        free_requests:
+          type: integer
+        total_cost_usd:
+          type: string
+    UsageHistoryResponse_events_inner:
+      example:
+        price_usd: price_usd
+        endpoint: endpoint
+        status_code: 0
+        method: method
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        is_paid: true
+        principal_type: principal_type
+        principal_id: principal_id
+      properties:
+        id:
+          format: uuid
+          type: string
+        principal_type:
+          type: string
+        principal_id:
+          type: string
+        method:
+          type: string
+        endpoint:
+          type: string
+        status_code:
+          type: integer
+        price_usd:
+          type: string
+        is_paid:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+    SubscriptionResponse_usage:
+      example:
+        shares:
+          limit: 1
+          used: 6
+        vaults:
+          limit: 1
+          used: 6
+        team_members:
+          limit: 1
+          used: 6
+        requests:
+          limit: 1
+          used: 6
+        secrets:
+          limit: 1
+          used: 6
+        intent_transactions:
+          limit: 1
+          used: 6
+        agents:
+          limit: 1
+          used: 6
+      properties:
+        requests:
+          $ref: "#/components/schemas/UsageMeter"
+        secrets:
+          $ref: "#/components/schemas/UsageMeter"
+        agents:
+          $ref: "#/components/schemas/UsageMeter"
+        vaults:
+          $ref: "#/components/schemas/UsageMeter"
+        team_members:
+          $ref: "#/components/schemas/UsageMeter"
+        intent_transactions:
+          $ref: "#/components/schemas/UsageMeter"
+        shares:
+          $ref: "#/components/schemas/UsageMeter"
+    CreditBalanceResponse_expiring_within_90_days:
+      example:
+        earliest_expiry: 2000-01-23T04:56:07.000+00:00
+        amount_cents: 6
+      properties:
+        amount_cents:
+          type: integer
+        earliest_expiry:
+          format: date-time
+          type: string
+    CreditTransactionsListResponse_transactions_inner:
+      example:
+        amount_cents: 0
+        balance_after_cents: 6
+        description: description
+        created_at: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        type: type
+      properties:
+        id:
+          format: uuid
+          type: string
+        type:
+          type: string
+        amount_cents:
+          type: integer
+        balance_after_cents:
+          type: integer
+        description:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+    AdminUsersListResponse_users_inner:
+      example:
+        billing_tier: billing_tier
+        free_tier_override: 0
+        auth_method: auth_method
+        role: role
+        org_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        created_at: 2000-01-23T04:56:07.000+00:00
+        is_sponsored: true
+        current_month_requests: 6
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        display_name: display_name
+        org_name: org_name
+        email: email
+      properties:
+        id:
+          format: uuid
+          type: string
+        email:
+          type: string
+        display_name:
+          type: string
+        role:
+          type: string
+        auth_method:
+          type: string
+        org_id:
+          format: uuid
+          type: string
+        org_name:
+          type: string
+        billing_tier:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        free_tier_override:
+          type: integer
+        is_sponsored:
+          type: boolean
+        current_month_requests:
+          type: integer
+    PaymentRequirement_accepts_inner:
+      example:
+        scheme: scheme
+        price: price
+        requiredDeadlineSeconds: 1
+        payTo: payTo
+        network: network
+      properties:
+        scheme:
+          type: string
+        network:
+          type: string
+        payTo:
+          type: string
+        price:
+          type: string
+        requiredDeadlineSeconds:
+          type: integer
+  securitySchemes:
+    BearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+    ApiKeyAuth:
+      description: 1ck_ prefixed API key used as Bearer token
+      scheme: bearer
+      type: http
+x-agentcash-guidance:
+  llmsTxtUrl: https://1claw.xyz/llms.txt

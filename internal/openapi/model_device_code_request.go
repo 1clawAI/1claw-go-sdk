@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -23,6 +23,8 @@ var _ MappedNullable = &DeviceCodeRequest{}
 // DeviceCodeRequest struct for DeviceCodeRequest
 type DeviceCodeRequest struct {
 	ClientId string `json:"client_id"`
+	// Account email; only that user may approve the code in the dashboard.
+	Email string `json:"email"`
 }
 
 type _DeviceCodeRequest DeviceCodeRequest
@@ -31,9 +33,10 @@ type _DeviceCodeRequest DeviceCodeRequest
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewDeviceCodeRequest(clientId string) *DeviceCodeRequest {
+func NewDeviceCodeRequest(clientId string, email string) *DeviceCodeRequest {
 	this := DeviceCodeRequest{}
 	this.ClientId = clientId
+	this.Email = email
 	return &this
 }
 
@@ -69,6 +72,30 @@ func (o *DeviceCodeRequest) SetClientId(v string) {
 	o.ClientId = v
 }
 
+// GetEmail returns the Email field value
+func (o *DeviceCodeRequest) GetEmail() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.Email
+}
+
+// GetEmailOk returns a tuple with the Email field value
+// and a boolean to check if the value has been set.
+func (o *DeviceCodeRequest) GetEmailOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Email, true
+}
+
+// SetEmail sets field value
+func (o *DeviceCodeRequest) SetEmail(v string) {
+	o.Email = v
+}
+
 func (o DeviceCodeRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -80,6 +107,7 @@ func (o DeviceCodeRequest) MarshalJSON() ([]byte, error) {
 func (o DeviceCodeRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["client_id"] = o.ClientId
+	toSerialize["email"] = o.Email
 	return toSerialize, nil
 }
 
@@ -89,6 +117,7 @@ func (o *DeviceCodeRequest) UnmarshalJSON(data []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"client_id",
+		"email",
 	}
 
 	allProperties := make(map[string]interface{})

@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -37,6 +37,8 @@ type SubmitTransactionRequest struct {
 	MaxFeePerGas *string `json:"max_fee_per_gas,omitempty"`
 	MaxPriorityFeePerGas *string `json:"max_priority_fee_per_gas,omitempty"`
 	SimulateFirst *bool `json:"simulate_first,omitempty"`
+	// Transaction mode
+	Mode *string `json:"mode,omitempty"`
 }
 
 type _SubmitTransactionRequest SubmitTransactionRequest
@@ -52,6 +54,8 @@ func NewSubmitTransactionRequest(to string, value string, chain string) *SubmitT
 	this.Chain = chain
 	var simulateFirst bool = false
 	this.SimulateFirst = &simulateFirst
+	var mode string = "eoa"
+	this.Mode = &mode
 	return &this
 }
 
@@ -62,6 +66,8 @@ func NewSubmitTransactionRequestWithDefaults() *SubmitTransactionRequest {
 	this := SubmitTransactionRequest{}
 	var simulateFirst bool = false
 	this.SimulateFirst = &simulateFirst
+	var mode string = "eoa"
+	this.Mode = &mode
 	return &this
 }
 
@@ -393,6 +399,38 @@ func (o *SubmitTransactionRequest) SetSimulateFirst(v bool) {
 	o.SimulateFirst = &v
 }
 
+// GetMode returns the Mode field value if set, zero value otherwise.
+func (o *SubmitTransactionRequest) GetMode() string {
+	if o == nil || IsNil(o.Mode) {
+		var ret string
+		return ret
+	}
+	return *o.Mode
+}
+
+// GetModeOk returns a tuple with the Mode field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SubmitTransactionRequest) GetModeOk() (*string, bool) {
+	if o == nil || IsNil(o.Mode) {
+		return nil, false
+	}
+	return o.Mode, true
+}
+
+// HasMode returns a boolean if a field has been set.
+func (o *SubmitTransactionRequest) HasMode() bool {
+	if o != nil && !IsNil(o.Mode) {
+		return true
+	}
+
+	return false
+}
+
+// SetMode gets a reference to the given string and assigns it to the Mode field.
+func (o *SubmitTransactionRequest) SetMode(v string) {
+	o.Mode = &v
+}
+
 func (o SubmitTransactionRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -429,6 +467,9 @@ func (o SubmitTransactionRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.SimulateFirst) {
 		toSerialize["simulate_first"] = o.SimulateFirst
+	}
+	if !IsNil(o.Mode) {
+		toSerialize["mode"] = o.Mode
 	}
 	return toSerialize, nil
 }

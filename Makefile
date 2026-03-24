@@ -1,7 +1,7 @@
 # 1claw-go-sdk Makefile
 # Regenerates the internal OpenAPI client from the spec.
 
-SPEC_PATH ?= ../1claw-openapi-spec/openapi.yaml
+SPEC_PATH ?= ../openapi-spec/openapi.yaml
 OUTPUT_PATH = ./internal/openapi
 
 .PHONY: generate
@@ -18,6 +18,8 @@ generate:
 		--additional-properties=packageName=openapi,outputAsLibrary=true
 	@# Remove generated go.mod so internal/openapi is part of parent module
 	@rm -f $(OUTPUT_PATH)/go.mod $(OUTPUT_PATH)/go.sum
+	@# Generated API tests use placeholder import github.com/GIT_USER_ID/GIT_REPO_ID
+	@rm -rf $(OUTPUT_PATH)/test
 	@echo "Generated client at $(OUTPUT_PATH)"
 
 .PHONY: test

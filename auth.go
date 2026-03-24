@@ -74,12 +74,12 @@ func (c *Client) refreshAccessToken(ctx context.Context) error {
 }
 
 func (c *Client) exchangeAgentToken(ctx context.Context) error {
-	req := openapi.AgentTokenRequest{
-		AgentId: c.agentID,
-		ApiKey:  c.apiKey,
+	req := openapi.NewAgentTokenRequest(c.apiKey)
+	if c.agentID != "" {
+		req.SetAgentId(c.agentID)
 	}
 	resp, httpResp, err := c.api.AuthenticationAPI.AgentToken(ctx).
-		AgentTokenRequest(req).
+		AgentTokenRequest(*req).
 		Execute()
 	if err != nil {
 		return c.wrapAuthError(err, httpResp)

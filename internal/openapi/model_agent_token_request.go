@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -22,7 +22,8 @@ var _ MappedNullable = &AgentTokenRequest{}
 
 // AgentTokenRequest struct for AgentTokenRequest
 type AgentTokenRequest struct {
-	AgentId string `json:"agent_id"`
+	// Optional when using key-only auth (ocv_ keys auto-resolve agent)
+	AgentId *string `json:"agent_id,omitempty"`
 	ApiKey string `json:"api_key"`
 }
 
@@ -32,9 +33,8 @@ type _AgentTokenRequest AgentTokenRequest
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAgentTokenRequest(agentId string, apiKey string) *AgentTokenRequest {
+func NewAgentTokenRequest(apiKey string) *AgentTokenRequest {
 	this := AgentTokenRequest{}
-	this.AgentId = agentId
 	this.ApiKey = apiKey
 	return &this
 }
@@ -47,28 +47,36 @@ func NewAgentTokenRequestWithDefaults() *AgentTokenRequest {
 	return &this
 }
 
-// GetAgentId returns the AgentId field value
+// GetAgentId returns the AgentId field value if set, zero value otherwise.
 func (o *AgentTokenRequest) GetAgentId() string {
-	if o == nil {
+	if o == nil || IsNil(o.AgentId) {
 		var ret string
 		return ret
 	}
-
-	return o.AgentId
+	return *o.AgentId
 }
 
-// GetAgentIdOk returns a tuple with the AgentId field value
+// GetAgentIdOk returns a tuple with the AgentId field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *AgentTokenRequest) GetAgentIdOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.AgentId) {
 		return nil, false
 	}
-	return &o.AgentId, true
+	return o.AgentId, true
 }
 
-// SetAgentId sets field value
+// HasAgentId returns a boolean if a field has been set.
+func (o *AgentTokenRequest) HasAgentId() bool {
+	if o != nil && !IsNil(o.AgentId) {
+		return true
+	}
+
+	return false
+}
+
+// SetAgentId gets a reference to the given string and assigns it to the AgentId field.
 func (o *AgentTokenRequest) SetAgentId(v string) {
-	o.AgentId = v
+	o.AgentId = &v
 }
 
 // GetApiKey returns the ApiKey field value
@@ -105,7 +113,9 @@ func (o AgentTokenRequest) MarshalJSON() ([]byte, error) {
 
 func (o AgentTokenRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["agent_id"] = o.AgentId
+	if !IsNil(o.AgentId) {
+		toSerialize["agent_id"] = o.AgentId
+	}
 	toSerialize["api_key"] = o.ApiKey
 	return toSerialize, nil
 }
@@ -115,7 +125,6 @@ func (o *AgentTokenRequest) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"agent_id",
 		"api_key",
 	}
 

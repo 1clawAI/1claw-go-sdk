@@ -28,9 +28,10 @@ type Client struct {
 	Access  *AccessService
 	Org     *OrgService
 	Chains  *ChainsService
-	Billing *BillingService
-	Audit   *AuditService
-	X402    *X402Service
+	Billing   *BillingService
+	Audit     *AuditService
+	X402      *X402Service
+	Treasury  *TreasuryService
 }
 
 // Option configures the Client.
@@ -152,6 +153,7 @@ func New(opts ...Option) (*Client, error) {
 	client.Billing = &BillingService{client: client}
 	client.Audit = &AuditService{client: client}
 	client.X402 = &X402Service{client: client}
+	client.Treasury = &TreasuryService{client: client}
 	return client, nil
 }
 

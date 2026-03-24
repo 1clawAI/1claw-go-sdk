@@ -19,8 +19,12 @@ func (s *AuthService) APIKeyToken(ctx context.Context, apiKey string) (*Token, e
 
 // AgentToken exchanges agent credentials for a JWT.
 func (s *AuthService) AgentToken(ctx context.Context, agentID, apiKey string) (*Token, error) {
+	req := openapi.NewAgentTokenRequest(apiKey)
+	if agentID != "" {
+		req.SetAgentId(agentID)
+	}
 	resp, _, err := s.client.api.AuthenticationAPI.AgentToken(ctx).
-		AgentTokenRequest(openapi.AgentTokenRequest{AgentId: agentID, ApiKey: apiKey}).
+		AgentTokenRequest(*req).
 		Execute()
 	if err != nil {
 		return nil, wrapAPIError(err)

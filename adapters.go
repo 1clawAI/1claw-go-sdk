@@ -825,3 +825,121 @@ func ptrStr(s *string) string {
 	}
 	return *s
 }
+
+// --- Treasury adapters ---
+
+func treasurySignerFromAPI(o *openapi.TreasurySignerResponse) TreasurySigner {
+	if o == nil {
+		return TreasurySigner{}
+	}
+	s := TreasurySigner{}
+	if o.Id != nil {
+		s.ID = *o.Id
+	}
+	if o.SignerType != nil {
+		s.SignerType = *o.SignerType
+	}
+	if o.SignerId != nil {
+		s.SignerID = *o.SignerId
+	}
+	if o.SignerAddress != nil {
+		s.SignerAddress = *o.SignerAddress
+	}
+	if o.AddedAt != nil {
+		s.AddedAt = o.AddedAt
+	}
+	return s
+}
+
+func treasuryFromAPI(o *openapi.TreasuryResponse) *Treasury {
+	if o == nil {
+		return nil
+	}
+	t := &Treasury{}
+	if o.Id != nil {
+		t.ID = *o.Id
+	}
+	if o.Name != nil {
+		t.Name = *o.Name
+	}
+	if o.SafeAddress != nil {
+		t.SafeAddress = *o.SafeAddress
+	}
+	if o.Chain != nil {
+		t.Chain = *o.Chain
+	}
+	if o.ChainId != nil {
+		v := *o.ChainId
+		t.ChainID = &v
+	}
+	if o.Threshold != nil {
+		v := *o.Threshold
+		t.Threshold = &v
+	}
+	if o.CreatedBy != nil {
+		t.CreatedBy = *o.CreatedBy
+	}
+	for i := range o.Signers {
+		t.Signers = append(t.Signers, treasurySignerFromAPI(&o.Signers[i]))
+	}
+	if o.CreatedAt != nil {
+		t.CreatedAt = o.CreatedAt
+	}
+	return t
+}
+
+func treasuryListFromAPI(o *openapi.ListTreasuries200Response) *TreasuryList {
+	if o == nil {
+		return nil
+	}
+	list := &TreasuryList{}
+	for i := range o.Treasuries {
+		if tr := treasuryFromAPI(&o.Treasuries[i]); tr != nil {
+			list.Treasuries = append(list.Treasuries, *tr)
+		}
+	}
+	return list
+}
+
+func treasuryAccessRequestFromAPI(o *openapi.AccessRequestResponse) TreasuryAccessRequest {
+	if o == nil {
+		return TreasuryAccessRequest{}
+	}
+	a := TreasuryAccessRequest{}
+	if o.Id != nil {
+		a.ID = *o.Id
+	}
+	if o.TreasuryId != nil {
+		a.TreasuryID = *o.TreasuryId
+	}
+	if o.AgentId != nil {
+		a.AgentID = *o.AgentId
+	}
+	if o.Status != nil {
+		a.Status = *o.Status
+	}
+	if o.Reason != nil {
+		a.Reason = *o.Reason
+	}
+	if o.RequestedAt != nil {
+		a.RequestedAt = o.RequestedAt
+	}
+	if o.ResolvedBy != nil {
+		a.ResolvedBy = *o.ResolvedBy
+	}
+	if o.ResolvedAt != nil {
+		a.ResolvedAt = o.ResolvedAt
+	}
+	return a
+}
+
+func treasuryAccessRequestListFromAPI(o *openapi.ListTreasuryAccessRequests200Response) *TreasuryAccessRequestList {
+	if o == nil {
+		return nil
+	}
+	list := &TreasuryAccessRequestList{}
+	for i := range o.Requests {
+		list.Requests = append(list.Requests, treasuryAccessRequestFromAPI(&o.Requests[i]))
+	}
+	return list
+}

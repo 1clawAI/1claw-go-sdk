@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Regenerate internal/openapi from the OpenAPI spec.
-# Run from repo root. Expects spec at ../1claw-openapi-spec/openapi.yaml by default.
+# Run from go-sdk repo root. Expects spec at ../openapi-spec/openapi.yaml by default (1claw monorepo layout).
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SPEC_PATH="${SPEC_PATH:-$REPO_ROOT/../1claw-openapi-spec/openapi.yaml}"
+SPEC_PATH="${SPEC_PATH:-$REPO_ROOT/../openapi-spec/openapi.yaml}"
 OUTPUT_PATH="$REPO_ROOT/internal/openapi"
 
 if [[ ! -f "$SPEC_PATH" ]]; then
@@ -23,4 +23,5 @@ npx @openapitools/openapi-generator-cli generate \
 
 # Remove generated go.mod so internal/openapi stays part of parent module
 rm -f "$OUTPUT_PATH/go.mod" "$OUTPUT_PATH/go.sum"
+rm -rf "$OUTPUT_PATH/test"
 echo "Generated client at $OUTPUT_PATH"

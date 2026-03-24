@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -52,6 +52,8 @@ type AgentResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 	LastActiveAt *time.Time `json:"last_active_at,omitempty"`
+	// Multi-chain; one Safe per chain
+	SmartAccounts []AgentSmartAccountResponse `json:"smart_accounts,omitempty"`
 }
 
 type _AgentResponse AgentResponse
@@ -760,6 +762,38 @@ func (o *AgentResponse) SetLastActiveAt(v time.Time) {
 	o.LastActiveAt = &v
 }
 
+// GetSmartAccounts returns the SmartAccounts field value if set, zero value otherwise.
+func (o *AgentResponse) GetSmartAccounts() []AgentSmartAccountResponse {
+	if o == nil || IsNil(o.SmartAccounts) {
+		var ret []AgentSmartAccountResponse
+		return ret
+	}
+	return o.SmartAccounts
+}
+
+// GetSmartAccountsOk returns a tuple with the SmartAccounts field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *AgentResponse) GetSmartAccountsOk() ([]AgentSmartAccountResponse, bool) {
+	if o == nil || IsNil(o.SmartAccounts) {
+		return nil, false
+	}
+	return o.SmartAccounts, true
+}
+
+// HasSmartAccounts returns a boolean if a field has been set.
+func (o *AgentResponse) HasSmartAccounts() bool {
+	if o != nil && !IsNil(o.SmartAccounts) {
+		return true
+	}
+
+	return false
+}
+
+// SetSmartAccounts gets a reference to the given []AgentSmartAccountResponse and assigns it to the SmartAccounts field.
+func (o *AgentResponse) SetSmartAccounts(v []AgentSmartAccountResponse) {
+	o.SmartAccounts = v
+}
+
 func (o AgentResponse) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -824,6 +858,9 @@ func (o AgentResponse) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.LastActiveAt) {
 		toSerialize["last_active_at"] = o.LastActiveAt
+	}
+	if !IsNil(o.SmartAccounts) {
+		toSerialize["smart_accounts"] = o.SmartAccounts
 	}
 	return toSerialize, nil
 }

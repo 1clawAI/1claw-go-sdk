@@ -3,7 +3,7 @@
 
 Secure secret management for AI agents. Provides vaults, secrets, policy-based access control, agent identity, Intents API, sharing, billing, and audit logging.  All endpoints require JWT Bearer authentication unless marked with `security: []`. 
 
-API version: 2.4.1
+API version: 2.6.0
 Contact: ops@1claw.xyz
 */
 
@@ -32,7 +32,7 @@ type ApiGetTransactionRequest struct {
 	includeSignedTx *bool
 }
 
-// Set to &#x60;true&#x60; or &#x60;1&#x60; to include the raw signed transaction hex in the response. Omitted by default to reduce key exfiltration risk. Only the literal values \&quot;true\&quot; or \&quot;1\&quot; enable inclusion; any other value or omission returns responses without signed_tx. 
+// Set to &#x60;true&#x60; or &#x60;1&#x60; to include the raw signed transaction hex in the response. Omitted by default to reduce key exfiltration risk. Only the literal values \&quot;true\&quot; or \&quot;1\&quot; enable inclusion; any other value or omission returns responses without signed_tx. Applies to GET /v1/agents/{agent_id}/transactions and GET /v1/agents/{agent_id}/transactions/{tx_id}. 
 func (r ApiGetTransactionRequest) IncludeSignedTx(includeSignedTx bool) ApiGetTransactionRequest {
 	r.includeSignedTx = &includeSignedTx
 	return r
@@ -160,7 +160,7 @@ type ApiListTransactionsRequest struct {
 	includeSignedTx *bool
 }
 
-// Set to &#x60;true&#x60; or &#x60;1&#x60; to include the raw signed transaction hex in the response. Omitted by default to reduce key exfiltration risk. Only the literal values \&quot;true\&quot; or \&quot;1\&quot; enable inclusion; any other value or omission returns responses without signed_tx. 
+// Set to &#x60;true&#x60; or &#x60;1&#x60; to include the raw signed transaction hex in the response. Omitted by default to reduce key exfiltration risk. Only the literal values \&quot;true\&quot; or \&quot;1\&quot; enable inclusion; any other value or omission returns responses without signed_tx. Applies to GET /v1/agents/{agent_id}/transactions and GET /v1/agents/{agent_id}/transactions/{tx_id}. 
 func (r ApiListTransactionsRequest) IncludeSignedTx(includeSignedTx bool) ApiListTransactionsRequest {
 	r.includeSignedTx = &includeSignedTx
 	return r
@@ -252,6 +252,159 @@ func (a *TransactionsAPIService) ListTransactionsExecute(r ApiListTransactionsRe
 		newErr := &GenericOpenAPIError{
 			body:  localVarBody,
 			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiSignTransactionRequest struct {
+	ctx context.Context
+	ApiService *TransactionsAPIService
+	agentId string
+	signTransactionRequest *SignTransactionRequest
+}
+
+func (r ApiSignTransactionRequest) SignTransactionRequest(signTransactionRequest SignTransactionRequest) ApiSignTransactionRequest {
+	r.signTransactionRequest = &signTransactionRequest
+	return r
+}
+
+func (r ApiSignTransactionRequest) Execute() (*SignTransactionResponse, *http.Response, error) {
+	return r.ApiService.SignTransactionExecute(r)
+}
+
+/*
+SignTransaction Sign a transaction without broadcasting
+
+Signs a transaction inside the server (or TEE when using Shroud) but does
+**not** broadcast it. The caller receives the raw `signed_tx` hex and
+`tx_hash` so it can submit to any RPC of its choosing.
+
+All agent guardrails (allowlists, value caps, daily limits) are enforced
+exactly as for the submit endpoint. The signed transaction is recorded for
+audit and daily-limit tracking with `status: "sign_only"`.
+
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @param agentId
+ @return ApiSignTransactionRequest
+*/
+func (a *TransactionsAPIService) SignTransaction(ctx context.Context, agentId string) ApiSignTransactionRequest {
+	return ApiSignTransactionRequest{
+		ApiService: a,
+		ctx: ctx,
+		agentId: agentId,
+	}
+}
+
+// Execute executes the request
+//  @return SignTransactionResponse
+func (a *TransactionsAPIService) SignTransactionExecute(r ApiSignTransactionRequest) (*SignTransactionResponse, *http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodPost
+		localVarPostBody     interface{}
+		formFiles            []formFile
+		localVarReturnValue  *SignTransactionResponse
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "TransactionsAPIService.SignTransaction")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/v1/agents/{agent_id}/transactions/sign"
+	localVarPath = strings.Replace(localVarPath, "{"+"agent_id"+"}", url.PathEscape(parameterValueToString(r.agentId, "agentId")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.signTransactionRequest == nil {
+		return localVarReturnValue, nil, reportError("signTransactionRequest is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	// body params
+	localVarPostBody = r.signTransactionRequest
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 400 {
+			var v ProblemDetails
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 403 {
+			var v ProblemDetails
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 402 {
+			var v PaymentRequirement
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}

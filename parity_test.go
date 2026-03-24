@@ -38,6 +38,33 @@ func TestResourceParity_Chains(t *testing.T) {
 	}
 }
 
+func TestResourceParity_Treasury(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/treasury" || r.Method != http.MethodGet {
+			t.Errorf("path=%s method=%s", r.URL.Path, r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"treasuries": []map[string]interface{}{},
+		})
+	}))
+	defer server.Close()
+
+	client, err := New(WithBaseURL(server.URL), WithToken("eyJ.test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := client.Treasury.List(context.Background())
+	if err != nil {
+		t.Fatalf("Treasury.List error = %v", err)
+	}
+	if resp == nil {
+		t.Fatal("resp is nil")
+	}
+}
+
 func TestResourceParity_Sharing(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/shares/outbound" {
