@@ -81,7 +81,7 @@ client, _ := oneclaw.New(
 | `client.Access` | Create, List, Update, Delete |
 | `client.Org` | ListMembers, InviteMember, UpdateMemberRole, RemoveMember |
 | `client.Chains` | List, Get |
-| `client.Billing` | Subscription, CreditBalance |
+| `client.Billing` | Subscription, CreditBalance; use raw `GET /v1/billing/llm-token-billing` until typed LLM billing helpers ship |
 | `client.Audit` | Query |
 | `client.X402` | Payment protocol (X402Signer interface) |
 
