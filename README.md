@@ -2,6 +2,8 @@
 
 Go SDK for **1Claw Vault** — HSM-backed secret management for AI agents and humans.
 
+> **Requires Go 1.22+**
+
 ## Install
 
 ```bash
@@ -17,7 +19,7 @@ import (
     "context"
     "log"
 
-    "github.com/1clawAI/1claw-go-sdk"
+    oneclaw "github.com/1clawAI/1claw-go-sdk"
 )
 
 func main() {
@@ -84,6 +86,7 @@ client, _ := oneclaw.New(
 | `client.Billing` | Subscription, CreditBalance; use raw `GET /v1/billing/llm-token-billing` until typed LLM billing helpers ship |
 | `client.Audit` | Query |
 | `client.X402` | Payment protocol (X402Signer interface) |
+| `client.Treasury` | Create, List, Get, Update, Delete, AddSigner, RemoveSigner, ListAccessRequests, RequestAccess, ApproveAccess, DenyAccess |
 
 ## CMEK (Customer-Managed Encryption Keys)
 
@@ -121,13 +124,18 @@ replace github.com/1clawAI/1claw-go-sdk => /path/to/1claw-go-sdk
 
 ## Regenerating the Client
 
-From the repo root:
+The Go SDK client is generated from the OpenAPI spec at `packages/openapi-spec/openapi.yaml`.
+After the spec is updated (e.g. new endpoints like GDPR `export-data`), regenerate:
 
 ```bash
 make generate
-# or
+# or point to a custom spec location
 SPEC_PATH=/path/to/openapi.yaml make generate
 ```
+
+This runs `openapi-generator-cli` and writes to `internal/openapi/`. Review the diff,
+run `go build ./...` and `go test ./...`, then add any new adapter/resource wrappers
+for newly generated API methods.
 
 ## Development
 
@@ -142,4 +150,4 @@ SDK versions track compatible OpenAPI spec versions. Regenerate when the spec ch
 
 ## License
 
-PolyForm Noncommercial 1.0.0
+MIT
