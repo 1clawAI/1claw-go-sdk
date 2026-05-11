@@ -453,3 +453,64 @@ type AddTreasurySignerParams struct {
 	SignerID      string
 	SignerAddress string
 }
+
+// --- Signing Key types ---
+
+// SigningKey represents a multi-chain signing key for an agent.
+type SigningKey struct {
+	ID         string
+	AgentID    string
+	Chain      string
+	Curve      string
+	PublicKey  string
+	Address    string
+	KeyVersion int32
+	IsActive   bool
+	CreatedAt  time.Time
+	RotatedAt  *time.Time
+}
+
+// SigningKeyList is the response from listing signing keys.
+type SigningKeyList struct {
+	Keys []SigningKey
+}
+
+// CreateSigningKeyParams are parameters for provisioning a signing key.
+type CreateSigningKeyParams struct {
+	Chain string
+}
+
+// SignIntentParams are parameters for the unified sign endpoint.
+type SignIntentParams struct {
+	IntentType        string
+	Chain             string
+	SigningKeyPath    string
+	Message           string
+	TypedData         interface{}
+	To                string
+	Value             string
+	TxType            *int32
+	Data              string
+	Nonce             *int64
+	GasLimit          *int64
+	GasPrice          string
+	MaxFeePerGas      string
+	MaxPriorityFee    string
+	AccessList        interface{}
+	MaxFeePerBlobGas  string
+	BlobVersionedHash []string
+	AuthorizationList interface{}
+}
+
+// SignIntentResult is the response from the unified sign endpoint.
+type SignIntentResult struct {
+	IntentType    string
+	Chain         string
+	From          string
+	Signature     string
+	SignedTx      string
+	TxHash        string
+	MessageHash   string
+	TypedDataHash string
+	TxType        *int32
+}

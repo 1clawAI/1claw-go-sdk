@@ -87,6 +87,8 @@ client, _ := oneclaw.New(
 | `client.Audit` | Query |
 | `client.X402` | Payment protocol (X402Signer interface) |
 | `client.Treasury` | Create, List, Get, Update, Delete, AddSigner, RemoveSigner, ListAccessRequests, RequestAccess, ApproveAccess, DenyAccess |
+| `client.SigningKeys` | Create, List, Rotate, Deactivate |
+| `client.Agents` | ...also: `Sign` (unified signing intent: personal_sign, typed_data, transaction) |
 
 ## CMEK (Customer-Managed Encryption Keys)
 
@@ -125,7 +127,7 @@ replace github.com/1clawAI/1claw-go-sdk => /path/to/1claw-go-sdk
 ## Regenerating the Client
 
 The Go SDK client is generated from the OpenAPI spec at `packages/openapi-spec/openapi.yaml`.
-After the spec is updated (e.g. new endpoints like GDPR `export-data`), regenerate:
+After the spec is updated (e.g. new endpoints like signing keys, unified sign), regenerate:
 
 ```bash
 make generate

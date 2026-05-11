@@ -19,19 +19,20 @@ type Client struct {
 	agentID   string
 
 	// Resource clients
-	Auth    *AuthService
-	Vaults  *VaultsService
-	Secrets *SecretsService
-	Agents  *AgentsService
-	APIKeys *APIKeysService
-	Sharing *SharingService
-	Access  *AccessService
-	Org     *OrgService
-	Chains  *ChainsService
-	Billing   *BillingService
-	Audit     *AuditService
-	X402      *X402Service
-	Treasury  *TreasuryService
+	Auth        *AuthService
+	Vaults      *VaultsService
+	Secrets     *SecretsService
+	Agents      *AgentsService
+	APIKeys     *APIKeysService
+	Sharing     *SharingService
+	Access      *AccessService
+	Org         *OrgService
+	Chains      *ChainsService
+	Billing     *BillingService
+	Audit       *AuditService
+	X402        *X402Service
+	Treasury    *TreasuryService
+	SigningKeys *SigningKeysService
 }
 
 // Option configures the Client.
@@ -154,6 +155,7 @@ func New(opts ...Option) (*Client, error) {
 	client.Audit = &AuditService{client: client}
 	client.X402 = &X402Service{client: client}
 	client.Treasury = &TreasuryService{client: client}
+	client.SigningKeys = &SigningKeysService{client: client}
 	return client, nil
 }
 

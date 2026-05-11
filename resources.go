@@ -64,3 +64,8 @@ type X402Service struct {
 type TreasuryService struct {
 	client *Client
 }
+
+// SigningKeysService provides multi-chain signing key operations.
+type SigningKeysService struct {
+	client *Client
+}
