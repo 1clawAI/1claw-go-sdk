@@ -174,3 +174,89 @@ func (s *TreasuryService) DenyAccess(ctx context.Context, treasuryID, requestID 
 	}
 	return nil
 }
+
+// ── Treasury Wallets (multi-chain, human-only, Pro+) ──────────────
+
+// TreasuryWallet represents a generated treasury wallet for a specific chain.
+type TreasuryWallet struct {
+	ID           string `json:"id"`
+	Chain        string `json:"chain"`
+	Curve        string `json:"curve"`
+	PublicKeyHex string `json:"public_key_hex"`
+	Address      string `json:"address"`
+	IsActive     bool   `json:"is_active"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// TreasuryWalletList is the response from listing treasury wallets.
+type TreasuryWalletList struct {
+	Wallets []TreasuryWallet `json:"wallets"`
+}
+
+// GenerateTreasuryWalletsParams configures which chains to generate wallets for.
+type GenerateTreasuryWalletsParams struct {
+	Chains []string `json:"chains,omitempty"`
+}
+
+// TreasuryWalletExport contains the exported private key for a treasury wallet.
+type TreasuryWalletExport struct {
+	Chain         string `json:"chain"`
+	Address       string `json:"address"`
+	PrivateKeyHex string `json:"private_key_hex"`
+}
+
+// GenerateWallets generates treasury wallets for the specified chains.
+// Human-only, requires Pro+ subscription.
+func (s *TreasuryService) GenerateWallets(ctx context.Context, params GenerateTreasuryWalletsParams) (*TreasuryWalletList, error) {
+	var result TreasuryWalletList
+	err := s.client.doJSON(ctx, "POST", "/v1/treasury/wallets/generate", params, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ListWallets returns all active treasury wallets for the calling user.
+func (s *TreasuryService) ListWallets(ctx context.Context) (*TreasuryWalletList, error) {
+	var result TreasuryWalletList
+	err := s.client.doJSON(ctx, "GET", "/v1/treasury/wallets", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// GetWallet returns the active treasury wallet for a specific chain.
+func (s *TreasuryService) GetWallet(ctx context.Context, chain string) (*TreasuryWallet, error) {
+	var result TreasuryWallet
+	err := s.client.doJSON(ctx, "GET", "/v1/treasury/wallets/"+chain, nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ExportWallet exports the private key for a treasury wallet (audit-logged).
+func (s *TreasuryService) ExportWallet(ctx context.Context, chain string) (*TreasuryWalletExport, error) {
+	var result TreasuryWalletExport
+	err := s.client.doJSON(ctx, "POST", "/v1/treasury/wallets/"+chain+"/export", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// RotateWallet rotates the key for a treasury wallet on the given chain.
+func (s *TreasuryService) RotateWallet(ctx context.Context, chain string) (*TreasuryWallet, error) {
+	var result TreasuryWallet
+	err := s.client.doJSON(ctx, "POST", "/v1/treasury/wallets/"+chain+"/rotate", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// DeactivateWallet deactivates the treasury wallet for a specific chain.
+func (s *TreasuryService) DeactivateWallet(ctx context.Context, chain string) error {
+	return s.client.doJSON(ctx, "DELETE", "/v1/treasury/wallets/"+chain, nil, nil)
+}

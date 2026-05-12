@@ -2,7 +2,11 @@
 package oneclaw
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -11,12 +15,12 @@ import (
 
 // Client is the 1Claw SDK client.
 type Client struct {
-	api       *openapi.APIClient
-	token     string
+	api          *openapi.APIClient
+	token        string
 	refreshToken string
-	tokenExpiry time.Time
-	apiKey    string
-	agentID   string
+	tokenExpiry  time.Time
+	apiKey       string
+	agentID      string
 
 	// Resource clients
 	Auth        *AuthService
@@ -169,4 +173,53 @@ func (c *Client) authContext(ctx context.Context) (context.Context, error) {
 		return context.WithValue(ctx, openapi.ContextAccessToken, c.token), nil
 	}
 	return ctx, nil
+}
+
+// doJSON performs authenticated JSON HTTP requests for endpoints not yet in the
+// generated openapi client. body may be nil for requests without a body.
+func (c *Client) doJSON(ctx context.Context, method, path string, body any, result any) error {
+	if err := c.ensureToken(ctx); err != nil {
+		return err
+	}
+
+	baseURL := "https://api.1claw.xyz"
+	if len(c.api.GetConfig().Servers) > 0 {
+		baseURL = c.api.GetConfig().Servers[0].URL
+	}
+
+	var reqBody io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("marshal request: %w", err)
+		}
+		reqBody = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, reqBody)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.api.GetConfig().HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("API error %d: %s", resp.StatusCode, string(data))
+	}
+	if result != nil && len(data) > 0 {
+		return json.Unmarshal(data, result)
+	}
+	return nil
 }
