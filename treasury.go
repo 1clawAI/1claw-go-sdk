@@ -237,9 +237,12 @@ func (s *TreasuryService) GetWallet(ctx context.Context, chain string) (*Treasur
 }
 
 // ExportWallet exports the private key for a treasury wallet (audit-logged).
-func (s *TreasuryService) ExportWallet(ctx context.Context, chain string) (*TreasuryWalletExport, error) {
+// Requires re-authentication via the account password.
+func (s *TreasuryService) ExportWallet(ctx context.Context, chain, password string) (*TreasuryWalletExport, error) {
 	var result TreasuryWalletExport
-	err := s.client.doJSON(ctx, "POST", "/v1/treasury/wallets/"+chain+"/export", nil, &result)
+	err := s.client.doJSONWithHeaders(ctx, "POST", "/v1/treasury/wallets/"+chain+"/export", nil, &result, map[string]string{
+		"X-Auth-Confirm": password,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -65,7 +65,7 @@ client, _ := oneclaw.New(
 | `Billing`          | Subscription, credits, usage                             |
 | `Audit`            | Hash-chained audit event log                             |
 | `X402`             | On-chain micropayments                                   |
-| `Treasury`         | Safe multisig treasuries                                 |
+| `Treasury`         | Safe multisig treasuries + multi-chain wallets           |
 | `SigningKeys`      | Multi-chain signing key management                       |
 | `Platform`         | Platform API — build multi-tenant apps on 1Claw          |
 

@@ -180,6 +180,11 @@ func (c *Client) authContext(ctx context.Context) (context.Context, error) {
 // doJSON performs authenticated JSON HTTP requests for endpoints not yet in the
 // generated openapi client. body may be nil for requests without a body.
 func (c *Client) doJSON(ctx context.Context, method, path string, body any, result any) error {
+	return c.doJSONWithHeaders(ctx, method, path, body, result, nil)
+}
+
+// doJSONWithHeaders is like doJSON but allows setting additional request headers.
+func (c *Client) doJSONWithHeaders(ctx context.Context, method, path string, body any, result any, headers map[string]string) error {
 	if err := c.ensureToken(ctx); err != nil {
 		return err
 	}
@@ -205,6 +210,9 @@ func (c *Client) doJSON(ctx context.Context, method, path string, body any, resu
 	req.Header.Set("Content-Type", "application/json")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 
 	resp, err := c.api.GetConfig().HTTPClient.Do(req)
