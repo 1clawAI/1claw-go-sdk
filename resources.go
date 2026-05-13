@@ -69,3 +69,8 @@ type TreasuryService struct {
 type SigningKeysService struct {
 	client *Client
 }
+
+// PlatformService provides Platform API operations for developers building on 1Claw.
+type PlatformService struct {
+	client *Client
+}

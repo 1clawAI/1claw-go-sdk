@@ -1,8 +1,6 @@
-# 1claw-go-sdk
+# 1Claw Go SDK
 
-Go SDK for **1Claw Vault** — HSM-backed secret management for AI agents and humans.
-
-> **Requires Go 1.22+**
+Go client library for the [1Claw](https://1claw.xyz) Vault API — HSM-backed secret management for AI agents and humans.
 
 ## Install
 
@@ -17,139 +15,94 @@ package main
 
 import (
     "context"
-    "log"
-
+    "fmt"
     oneclaw "github.com/1clawAI/1claw-go-sdk"
 )
 
 func main() {
-    client, err := oneclaw.New(
-        oneclaw.WithBaseURL("https://api.1claw.xyz"),
-        oneclaw.WithAPIKey("ocv_..."),  // auto-exchanges for JWT
+    client, _ := oneclaw.New(
+        oneclaw.WithAPIKey("ocv_..."),
+        oneclaw.WithAgentID("agent-uuid"),
     )
-    if err != nil {
-        log.Fatal(err)
-    }
 
     ctx := context.Background()
 
     // List vaults
-    vaults, err := client.Vaults.List(ctx)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    // Get a secret
-    secret, err := client.Secrets.Get(ctx, "vault-id", "path/to/secret")
-
-    // Create an API key
-    created, err := client.APIKeys.Create(ctx, "my-key", []string{"vault:read"})
+    vaults, _ := client.Vaults.List(ctx)
+    fmt.Println(vaults)
 }
 ```
 
 ## Authentication
 
 ```go
-// 1. API key (auto-exchanges for JWT on first call)
-client, _ := oneclaw.New(
-    oneclaw.WithBaseURL("https://api.1claw.xyz"),
-    oneclaw.WithAPIKey("ocv_..."),
-)
+// API key (auto-exchanges for JWT)
+client, _ := oneclaw.New(oneclaw.WithAPIKey("ocv_..."))
 
-// 2. Agent credentials
+// Pre-authenticated JWT
+client, _ := oneclaw.New(oneclaw.WithToken("eyJ..."))
+
+// Agent credentials
 client, _ := oneclaw.New(
-    oneclaw.WithBaseURL("https://api.1claw.xyz"),
     oneclaw.WithAPIKey("ocv_..."),
     oneclaw.WithAgentID("agent-uuid"),
 )
-
-// 3. Pre-obtained JWT
-client, _ := oneclaw.New(
-    oneclaw.WithBaseURL("https://api.1claw.xyz"),
-    oneclaw.WithToken("eyJ..."),
-)
 ```
 
-## API Resources
+## Services
 
-| Resource | Methods |
-|----------|---------|
-| `client.Auth` | APIKeyToken, AgentToken, Login, Me |
-| `client.Vaults` | Create, List, Get, Delete |
-| `client.Secrets` | Put, Get, Delete, List |
-| `client.Agents` | Create, Get, List, Update, Delete |
-| `client.APIKeys` | Create, List, Revoke |
-| `client.Sharing` | Create, ListOutbound, ListInbound, Revoke |
-| `client.Access` | Create, List, Update, Delete |
-| `client.Org` | ListMembers, InviteMember, UpdateMemberRole, RemoveMember |
-| `client.Chains` | List, Get |
-| `client.Billing` | Subscription, CreditBalance; use raw `GET /v1/billing/llm-token-billing` until typed LLM billing helpers ship |
-| `client.Audit` | Query |
-| `client.X402` | Payment protocol (X402Signer interface) |
-| `client.Treasury` | Create, List, Get, Update, Delete, AddSigner, RemoveSigner, ListAccessRequests, RequestAccess, ApproveAccess, DenyAccess |
-| `client.SigningKeys` | Create, List, Rotate, Deactivate |
-| `client.Agents` | ...also: `Sign` (unified signing intent: personal_sign, typed_data, transaction) |
+| Service            | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `Auth`             | Login, signup, agent tokens, federated tokens            |
+| `Vaults`           | Create, list, get, delete vaults                         |
+| `Secrets`          | Store, retrieve, rotate, delete secrets                  |
+| `Agents`           | Manage agents, transactions, signing                     |
+| `APIKeys`          | Create, list, revoke API keys                            |
+| `Sharing`          | Share secrets via links or with users/agents              |
+| `Access`           | Policy-based access control                              |
+| `Org`              | Organization member management                           |
+| `Chains`           | Blockchain chain registry                                |
+| `Billing`          | Subscription, credits, usage                             |
+| `Audit`            | Hash-chained audit event log                             |
+| `X402`             | On-chain micropayments                                   |
+| `Treasury`         | Safe multisig treasuries                                 |
+| `SigningKeys`      | Multi-chain signing key management                       |
+| `Platform`         | Platform API — build multi-tenant apps on 1Claw          |
 
-## CMEK (Customer-Managed Encryption Keys)
+## Platform API
+
+The Platform API lets developers build applications on top of 1Claw, provisioning users, vaults, agents, and policies on behalf of end-users via bootstrap templates.
 
 ```go
-import "github.com/1clawAI/1claw-go-sdk/cmek"
+// Create a platform app
+app, _ := client.Platform.CreateApp(ctx, oneclaw.CreatePlatformAppRequest{
+    Name: "my-app",
+})
 
-// Generate a key
-key, err := cmek.GenerateKey()
+// List platform apps
+apps, _ := client.Platform.ListApps(ctx)
 
-// Compute fingerprint
-fingerprint := cmek.Fingerprint(key)
+// Upsert a user
+user, _ := client.Platform.UpsertUser(ctx, oneclaw.UpsertPlatformUserRequest{
+    Email: "user@example.com",
+})
 
-// Encrypt before storing
-encrypted, _ := cmek.Encrypt(key, "my-secret")
-client.Secrets.Put(ctx, vaultID, "path", encrypted, "generic")
-
-// Decrypt after retrieving
-secret, _ := client.Secrets.Get(ctx, vaultID, "path")
-plaintext, _ := cmek.Decrypt(key, secret.Value)
+// Bootstrap resources from a template
+result, _ := client.Platform.BootstrapUser(ctx, connectionID)
 ```
 
-## Using in Other Projects
+## Options
 
-Add to your `go.mod`:
-
-```go
-require github.com/1clawAI/1claw-go-sdk v0.1.0
-```
-
-For local development:
-
-```go
-replace github.com/1clawAI/1claw-go-sdk => /path/to/1claw-go-sdk
-```
-
-## Regenerating the Client
-
-The Go SDK client is generated from the OpenAPI spec at `packages/openapi-spec/openapi.yaml`.
-After the spec is updated (e.g. new endpoints like signing keys, unified sign), regenerate:
-
-```bash
-make generate
-# or point to a custom spec location
-SPEC_PATH=/path/to/openapi.yaml make generate
-```
-
-This runs `openapi-generator-cli` and writes to `internal/openapi/`. Review the diff,
-run `go build ./...` and `go test ./...`, then add any new adapter/resource wrappers
-for newly generated API methods.
-
-## Development
-
-```bash
-go build ./...
-go test ./...
-```
-
-## Versioning
-
-SDK versions track compatible OpenAPI spec versions. Regenerate when the spec changes.
+| Option             | Description                                |
+| ------------------ | ------------------------------------------ |
+| `WithBaseURL`      | Override API base URL                      |
+| `WithToken`        | Set a pre-obtained JWT                     |
+| `WithAPIKey`       | Set API key (auto-exchanges for JWT)       |
+| `WithAgentID`      | Set agent ID for agent token flow          |
+| `WithHTTPClient`   | Custom HTTP client                         |
+| `WithUserAgent`    | Custom User-Agent header                   |
+| `WithDebug`        | Enable debug logging                       |
 
 ## License
 
-MIT
+[MIT](./LICENSE)
