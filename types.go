@@ -545,6 +545,17 @@ type CreateSigningKeyParams struct {
 	Chain string
 }
 
+// SigningKeyExport is the response from exporting a signing key's private key.
+type SigningKeyExport struct {
+	Chain      string  `json:"chain"`
+	Curve      string  `json:"curve"`
+	PublicKey  string  `json:"public_key"`
+	Address    *string `json:"address,omitempty"`
+	PrivateKey string  `json:"private_key"`
+	KeyVersion int     `json:"key_version"`
+	AgentID    string  `json:"agent_id"`
+}
+
 // SignIntentParams are parameters for the unified sign endpoint.
 type SignIntentParams struct {
 	IntentType        string
