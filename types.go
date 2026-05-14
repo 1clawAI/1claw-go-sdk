@@ -454,6 +454,71 @@ type AddTreasurySignerParams struct {
 	SignerAddress string
 }
 
+// --- Platform types ---
+
+// PlatformApp represents a platform app.
+type PlatformApp struct {
+	ID                string
+	Name              string
+	Slug              string
+	Description       string
+	LogoURL           string
+	APIKeyPrefix      string
+	OIDCJwksURL       string
+	OIDCIssuer        string
+	OIDCAudience      string
+	RedirectURIs      []string
+	WebhookURL        string
+	IsActive          bool
+	BillingModel      string
+	AuthMode          string
+	MaxConnectedUsers *int32
+	ConnectedUsers    int32
+	CreatedAt         *time.Time
+	UpdatedAt         *time.Time
+}
+
+// PlatformAppList is the response from listing platform apps.
+type PlatformAppList struct {
+	Apps []PlatformApp
+}
+
+// PlatformAppCreated is the response from creating a platform app.
+type PlatformAppCreated struct {
+	PlatformApp
+	APIKey string
+}
+
+// CreatePlatformAppRequest are parameters for creating a platform app.
+type CreatePlatformAppRequest struct {
+	Name              string
+	Slug              string
+	Description       string
+	OIDCJwksURL       string
+	OIDCIssuer        string
+	OIDCAudience      string
+	RedirectURIs      []string
+	BillingModel      string
+	AuthMode          string
+	MaxConnectedUsers *int32
+}
+
+// UpdatePlatformAppRequest are parameters for updating a platform app.
+type UpdatePlatformAppRequest struct {
+	Name              *string
+	Description       *string
+	LogoURL           *string
+	OIDCJwksURL       *string
+	OIDCIssuer        *string
+	OIDCAudience      *string
+	RedirectURIs      []string
+	WebhookURL        *string
+	BillingModel      *string
+	AuthMode          *string
+	MaxConnectedUsers *int32
+	IsActive          *bool
+}
+
 // --- Signing Key types ---
 
 // SigningKey represents a multi-chain signing key for an agent.
