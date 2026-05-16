@@ -15,5 +15,7 @@ package oneclaw
 //   POST   /v1/platform/users/upsert                  — UpsertUser
 //   GET    /v1/platform/apps/{appId}/users            — ListUsers
 //   POST   /v1/platform/connections/{connId}/bootstrap — BootstrapUser
+//   GET    /v1/platform/claim/{token}                 — ClaimPreview (public, no auth)
+//   POST   /v1/platform/claim/{token}                 — ClaimRedeem (public, no auth)
 //   GET    /v1/platform/connected-apps                — ListConnectedApps (user-side)
 //   DELETE /v1/platform/connected-apps/{connId}       — DisconnectApp (user-side)
