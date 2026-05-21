@@ -161,6 +161,9 @@ func agentFromAPI(o *openapi.AgentResponse) Agent {
 	if o.ExpiresAt != nil {
 		a.ExpiresAt = o.ExpiresAt
 	}
+	if o.ApiKeyExpiresAt != nil {
+		a.ApiKeyExpiresAt = o.ApiKeyExpiresAt
+	}
 	if o.LastActiveAt != nil {
 		a.LastActiveAt = o.LastActiveAt
 	}
@@ -204,6 +207,9 @@ func createAgentParamsToAPI(p CreateAgentParams) openapi.CreateAgentRequest {
 	}
 	if p.ExpiresAt != nil {
 		req.ExpiresAt = p.ExpiresAt
+	}
+	if p.ApiKeyExpiresAt != nil {
+		req.ApiKeyExpiresAt = p.ApiKeyExpiresAt
 	}
 	req.IntentsApiEnabled = &p.IntentsAPIEnabled
 	if len(p.TxToAllowlist) > 0 {
@@ -252,6 +258,7 @@ func updateAgentParamsToAPI(p UpdateAgentParams) openapi.UpdateAgentRequest {
 	req.Scopes = p.Scopes
 	req.IsActive = p.IsActive
 	req.ExpiresAt = p.ExpiresAt
+	req.ApiKeyExpiresAt = p.ApiKeyExpiresAt
 	req.IntentsApiEnabled = p.IntentsAPIEnabled
 	req.TxToAllowlist = p.TxToAllowlist
 	req.TxMaxValueEth = p.TxMaxValueEth

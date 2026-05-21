@@ -51,6 +51,7 @@ type AgentResponse struct {
 	ShroudConfig *ShroudConfig `json:"shroud_config,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	ApiKeyExpiresAt *time.Time `json:"api_key_expires_at,omitempty"`
 	LastActiveAt *time.Time `json:"last_active_at,omitempty"`
 	// Multi-chain; one Safe per chain
 	SmartAccounts []AgentSmartAccountResponse `json:"smart_accounts,omitempty"`

@@ -25,6 +25,7 @@ type UpdateAgentRequest struct {
 	Scopes []string `json:"scopes,omitempty"`
 	IsActive *bool `json:"is_active,omitempty"`
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	ApiKeyExpiresAt *time.Time `json:"api_key_expires_at,omitempty"`
 	IntentsApiEnabled *bool `json:"intents_api_enabled,omitempty"`
 	TxToAllowlist []string `json:"tx_to_allowlist,omitempty"`
 	TxMaxValueEth *string `json:"tx_max_value_eth,omitempty"`

@@ -79,6 +79,7 @@ type Agent struct {
 	ShroudEnabled        bool
 	CreatedAt            time.Time
 	ExpiresAt            *time.Time
+	ApiKeyExpiresAt      *time.Time
 	LastActiveAt         *time.Time
 }
 
@@ -100,6 +101,7 @@ type CreateAgentParams struct {
 	AuthMethod           string
 	Scopes               []string
 	ExpiresAt            *time.Time
+	ApiKeyExpiresAt      *time.Time
 	IntentsAPIEnabled    bool
 	TxToAllowlist        []string
 	TxMaxValueEth        string
@@ -122,6 +124,7 @@ type UpdateAgentParams struct {
 	Scopes            []string
 	IsActive          *bool
 	ExpiresAt         *time.Time
+	ApiKeyExpiresAt   *time.Time
 	IntentsAPIEnabled *bool
 	TxToAllowlist     []string
 	TxMaxValueEth     *string
@@ -474,6 +477,8 @@ type PlatformApp struct {
 	AuthMode          string
 	MaxConnectedUsers *int32
 	ConnectedUsers    int32
+	ApiKeyExpiresAt   *time.Time
+	ApiKeyRotatedAt   *time.Time
 	CreatedAt         *time.Time
 	UpdatedAt         *time.Time
 }
@@ -501,6 +506,7 @@ type CreatePlatformAppRequest struct {
 	BillingModel      string
 	AuthMode          string
 	MaxConnectedUsers *int32
+	ApiKeyExpiresAt   *time.Time
 }
 
 // UpdatePlatformAppRequest are parameters for updating a platform app.
