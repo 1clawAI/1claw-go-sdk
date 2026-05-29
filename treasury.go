@@ -263,3 +263,115 @@ func (s *TreasuryService) RotateWallet(ctx context.Context, chain string) (*Trea
 func (s *TreasuryService) DeactivateWallet(ctx context.Context, chain string) error {
 	return s.client.doJSON(ctx, "DELETE", "/v1/treasury/wallets/"+chain, nil, nil)
 }
+
+// ── Treasury Proposals (multisig propose/sign/execute) ────────────
+
+// TreasuryProposal represents a multisig transaction proposal.
+type TreasuryProposal struct {
+	ID          string              `json:"id"`
+	TreasuryID  string              `json:"treasury_id"`
+	ProposerID  string              `json:"proposer_id"`
+	To          string              `json:"to"`
+	ValueWei    string              `json:"value_wei"`
+	Data        string              `json:"data"`
+	Operation   int                 `json:"operation"`
+	SafeTxHash  string              `json:"safe_tx_hash"`
+	Nonce       int                 `json:"nonce"`
+	Status      string              `json:"status"`
+	Signatures  []ProposalSignature `json:"signatures,omitempty"`
+	TxHash      *string             `json:"tx_hash,omitempty"`
+	CreatedAt   string              `json:"created_at"`
+	ExecutedAt  *string             `json:"executed_at,omitempty"`
+}
+
+// ProposalSignature represents a signer's signature on a proposal.
+type ProposalSignature struct {
+	ID            string `json:"id"`
+	SignerID      string `json:"signer_id"`
+	SignerType    string `json:"signer_type"`
+	SignerAddress string `json:"signer_address"`
+	Signature     string `json:"signature"`
+	Decision      string `json:"decision"`
+	CreatedAt     string `json:"created_at"`
+}
+
+// TreasuryProposalList is the response from listing proposals.
+type TreasuryProposalList struct {
+	Proposals []TreasuryProposal `json:"proposals"`
+}
+
+// CreateProposalParams configures a new proposal.
+type CreateProposalParams struct {
+	To         string `json:"to"`
+	ValueWei   string `json:"value_wei"`
+	Data       string `json:"data"`
+	Operation  int    `json:"operation"`
+	SafeTxHash string `json:"safe_tx_hash"`
+	Nonce      int    `json:"nonce"`
+}
+
+// SignProposalParams configures a proposal signature.
+type SignProposalParams struct {
+	SignerAddress string `json:"signer_address"`
+	Signature    string `json:"signature"`
+	Decision     string `json:"decision"`
+}
+
+// CreateProposal creates a multisig transaction proposal.
+func (s *TreasuryService) CreateProposal(ctx context.Context, treasuryID string, params CreateProposalParams) (*TreasuryProposal, error) {
+	var result TreasuryProposal
+	err := s.client.doJSON(ctx, "POST", "/v1/treasury/"+treasuryID+"/proposals", params, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ListProposals lists proposals for a treasury. Optional status filter.
+func (s *TreasuryService) ListProposals(ctx context.Context, treasuryID string, status *string) (*TreasuryProposalList, error) {
+	path := "/v1/treasury/" + treasuryID + "/proposals"
+	if status != nil && *status != "" {
+		path += "?status=" + *status
+	}
+	var result TreasuryProposalList
+	err := s.client.doJSON(ctx, "GET", path, nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// GetProposal retrieves a single proposal with its signatures.
+func (s *TreasuryService) GetProposal(ctx context.Context, treasuryID, proposalID string) (*TreasuryProposal, error) {
+	var result TreasuryProposal
+	err := s.client.doJSON(ctx, "GET", "/v1/treasury/"+treasuryID+"/proposals/"+proposalID, nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// SignProposal submits a signature (approve or reject) for a proposal.
+func (s *TreasuryService) SignProposal(ctx context.Context, treasuryID, proposalID string, params SignProposalParams) (*TreasuryProposal, error) {
+	var result TreasuryProposal
+	err := s.client.doJSON(ctx, "POST", "/v1/treasury/"+treasuryID+"/proposals/"+proposalID+"/sign", params, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ExecuteProposal force-executes a proposal if threshold is met (user-only).
+func (s *TreasuryService) ExecuteProposal(ctx context.Context, treasuryID, proposalID string) (*TreasuryProposal, error) {
+	var result TreasuryProposal
+	err := s.client.doJSON(ctx, "POST", "/v1/treasury/"+treasuryID+"/proposals/"+proposalID+"/execute", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// CancelProposal cancels a pending proposal (proposer only).
+func (s *TreasuryService) CancelProposal(ctx context.Context, treasuryID, proposalID string) error {
+	return s.client.doJSON(ctx, "DELETE", "/v1/treasury/"+treasuryID+"/proposals/"+proposalID, nil, nil)
+}
