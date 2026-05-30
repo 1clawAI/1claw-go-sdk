@@ -264,6 +264,93 @@ func (s *TreasuryService) DeactivateWallet(ctx context.Context, chain string) er
 	return s.client.doJSON(ctx, "DELETE", "/v1/treasury/wallets/"+chain, nil, nil)
 }
 
+// TreasuryWalletBalance represents the balance response for a treasury wallet.
+type TreasuryWalletBalance struct {
+	Chain         string              `json:"chain"`
+	Address       string              `json:"address"`
+	NativeBalance string              `json:"native_balance"`
+	NativeSymbol  string              `json:"native_symbol"`
+	Tokens        []TokenBalance      `json:"tokens,omitempty"`
+}
+
+// TokenBalance represents a single ERC-20 token balance.
+type TokenBalance struct {
+	Contract string `json:"contract"`
+	Symbol   string `json:"symbol"`
+	Balance  string `json:"balance"`
+	Decimals int    `json:"decimals"`
+}
+
+// GetWalletBalance returns native and token balances for a treasury wallet.
+func (s *TreasuryService) GetWalletBalance(ctx context.Context, chain string) (*TreasuryWalletBalance, error) {
+	var result TreasuryWalletBalance
+	err := s.client.doJSON(ctx, "GET", "/v1/treasury/wallets/"+chain+"/balance", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// SendFromWalletParams configures a send transaction from a treasury wallet.
+type SendFromWalletParams struct {
+	To            string `json:"to"`
+	Amount        string `json:"amount"`
+	TokenContract string `json:"token_contract,omitempty"`
+}
+
+// SendFromWalletResponse is the result of a treasury wallet send.
+type SendFromWalletResponse struct {
+	TxHash string `json:"tx_hash"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Amount string `json:"amount"`
+	Chain  string `json:"chain"`
+}
+
+// SendFromWallet sends native currency or ERC-20 tokens from a treasury wallet.
+// Requires password re-authentication.
+func (s *TreasuryService) SendFromWallet(ctx context.Context, chain, password string, params SendFromWalletParams) (*SendFromWalletResponse, error) {
+	var result SendFromWalletResponse
+	err := s.client.doJSONWithHeaders(ctx, "POST", "/v1/treasury/wallets/"+chain+"/send", params, &result, map[string]string{
+		"X-Auth-Confirm": password,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// SwapFromWalletParams configures a token swap from a treasury wallet.
+type SwapFromWalletParams struct {
+	SellToken          string `json:"sell_token"`
+	BuyToken           string `json:"buy_token"`
+	SellAmount         string `json:"sell_amount"`
+	SlippagePercentage string `json:"slippage_percentage,omitempty"`
+}
+
+// SwapFromWalletResponse is the result of a treasury wallet swap.
+type SwapFromWalletResponse struct {
+	TxHash     string `json:"tx_hash"`
+	SellToken  string `json:"sell_token"`
+	BuyToken   string `json:"buy_token"`
+	SellAmount string `json:"sell_amount"`
+	BuyAmount  string `json:"buy_amount"`
+	Chain      string `json:"chain"`
+}
+
+// SwapFromWallet executes a token swap via DEX aggregator from a treasury wallet.
+// Requires password re-authentication.
+func (s *TreasuryService) SwapFromWallet(ctx context.Context, chain, password string, params SwapFromWalletParams) (*SwapFromWalletResponse, error) {
+	var result SwapFromWalletResponse
+	err := s.client.doJSONWithHeaders(ctx, "POST", "/v1/treasury/wallets/"+chain+"/swap", params, &result, map[string]string{
+		"X-Auth-Confirm": password,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 // ── Treasury Proposals (multisig propose/sign/execute) ────────────
 
 // TreasuryProposal represents a multisig transaction proposal.

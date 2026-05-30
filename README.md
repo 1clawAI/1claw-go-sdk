@@ -65,7 +65,9 @@ client, _ := oneclaw.New(
 | `Billing`          | Subscription, credits, usage                             |
 | `Audit`            | Hash-chained audit event log                             |
 | `X402`             | On-chain micropayments                                   |
-| `Treasury`         | Safe multisig treasuries, wallets, proposals & delegations |
+| `Treasury`         | Safe multisig treasuries, wallets, delegations             |
+| `Treasury.Wallets` | Multi-chain wallet management: generate, list, get, balance, send, swap, export, rotate, deactivate |
+| `Treasury.Proposals` | Treasury proposals: create, list, get, sign, execute, cancel |
 | `SigningKeys`      | Multi-chain signing key management (create, list, rotate, deactivate, export) |
 | `Platform`         | Platform API — build multi-tenant apps on 1Claw          |
 
