@@ -296,15 +296,17 @@ type SendFromWalletParams struct {
 	To            string `json:"to"`
 	Amount        string `json:"amount"`
 	TokenContract string `json:"token_contract,omitempty"`
+	Gasless       bool   `json:"gasless,omitempty"`
 }
 
 // SendFromWalletResponse is the result of a treasury wallet send.
 type SendFromWalletResponse struct {
-	TxHash string `json:"tx_hash"`
-	From   string `json:"from"`
-	To     string `json:"to"`
-	Amount string `json:"amount"`
-	Chain  string `json:"chain"`
+	TxHash    string  `json:"tx_hash"`
+	From      string  `json:"from"`
+	To        string  `json:"to"`
+	Amount    string  `json:"amount"`
+	Chain     string  `json:"chain"`
+	UserOpHash *string `json:"user_op_hash,omitempty"`
 }
 
 // SendFromWallet sends native currency or ERC-20 tokens from a treasury wallet.
