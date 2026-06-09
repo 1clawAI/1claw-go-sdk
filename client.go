@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/1clawAI/1claw-go-sdk/internal/openapi"
@@ -21,6 +22,7 @@ type Client struct {
 	tokenExpiry  time.Time
 	apiKey       string
 	agentID      string
+	tokenMu      sync.Mutex
 
 	// Resource clients
 	Auth        *AuthService
@@ -221,7 +223,7 @@ func (c *Client) doJSONWithHeaders(ctx context.Context, method, path string, bod
 	}
 	defer resp.Body.Close()
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 50*1024*1024))
 	if err != nil {
 		return err
 	}

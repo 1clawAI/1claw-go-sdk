@@ -16,6 +16,9 @@ const refreshThreshold = 60 * time.Second
 
 // ensureToken exchanges API key for JWT if needed, or refreshes when close to expiry.
 func (c *Client) ensureToken(ctx context.Context) error {
+	c.tokenMu.Lock()
+	defer c.tokenMu.Unlock()
+
 	if c.token != "" && time.Now().Add(refreshThreshold).Before(c.tokenExpiry) {
 		return nil
 	}

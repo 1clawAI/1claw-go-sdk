@@ -17,16 +17,21 @@ type retryTransport struct {
 func (r *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
+
+	// Only retry on 5xx for idempotent methods or requests with idempotency keys
+	isIdempotent := req.Method == http.MethodGet || req.Method == http.MethodHead ||
+		req.Method == http.MethodDelete || req.Header.Get("Idempotency-Key") != ""
+
 	for i := 0; i <= r.maxRetries; i++ {
 		resp, err = r.inner.RoundTrip(req)
 		if err != nil {
-			if isRetryableErr(err) && i < r.maxRetries {
+			if isIdempotent && isRetryableErr(err) && i < r.maxRetries {
 				time.Sleep(time.Duration(i+1) * 100 * time.Millisecond)
 				continue
 			}
 			return resp, err
 		}
-		if resp.StatusCode >= 500 && resp.StatusCode < 600 && i < r.maxRetries {
+		if isIdempotent && resp.StatusCode >= 500 && resp.StatusCode < 600 && i < r.maxRetries {
 			resp.Body.Close()
 			time.Sleep(time.Duration(i+1) * 100 * time.Millisecond)
 			continue
@@ -65,6 +70,9 @@ func (i *idempotencyTransport) RoundTrip(req *http.Request) (*http.Response, err
 
 func generateIdempotencyKey() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fall back to timestamp-based key if crypto/rand fails
+		return hex.EncodeToString([]byte(time.Now().String()))
+	}
 	return hex.EncodeToString(b)
 }
