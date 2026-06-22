@@ -70,6 +70,9 @@ client, _ := oneclaw.New(
 | `Treasury.Proposals` | Treasury proposals: create, list, get, sign, execute, cancel |
 | `SigningKeys`      | Multi-chain signing key management (create, list, rotate, deactivate, export) |
 | `Platform`         | Platform API — build multi-tenant apps on 1Claw          |
+| `Webhooks`         | Register and manage event webhooks                       |
+| `Risk`             | Risk events, verdicts, honeytokens (v0.34)               |
+| `Approvals`        | Human-in-the-loop approval workflow                      |
 
 ## Platform API
 
@@ -92,6 +95,17 @@ user, _ := client.Platform.UpsertUser(ctx, oneclaw.UpsertPlatformUserRequest{
 // Bootstrap resources from a template
 result, _ := client.Platform.BootstrapUser(ctx, connectionID)
 ```
+
+## DPoP (Proof-of-Possession)
+
+```go
+client, _ := oneclaw.New(
+    oneclaw.WithAPIKey("ocv_..."),
+    oneclaw.WithDPoP(true),
+)
+```
+
+> **Note:** For the full v0.34 API surface (including OAuth, email OTP, spend policies, deposit destinations, fiat ramps, and internal accounts), see the [TypeScript SDK](https://www.npmjs.com/package/@1claw/sdk) and the [OpenAPI spec](https://www.npmjs.com/package/@1claw/openapi-spec).
 
 ## Options
 
