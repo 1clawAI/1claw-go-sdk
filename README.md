@@ -71,7 +71,7 @@ client, _ := oneclaw.New(
 | `SigningKeys`      | Multi-chain signing key management (create, list, rotate, deactivate, export) |
 | `Platform`         | Platform API — build multi-tenant apps on 1Claw          |
 | `Webhooks`         | Register and manage event webhooks                       |
-| `Risk`             | Risk events, verdicts, honeytokens (v0.34)               |
+| `Risk`             | Risk events, verdicts, honeytokens (v0.36+)               |
 | `Approvals`        | Human-in-the-loop approval workflow                      |
 
 ## Platform API
@@ -105,7 +105,7 @@ client, _ := oneclaw.New(
 )
 ```
 
-> **Note:** For the full v0.34 API surface (including OAuth, email OTP, spend policies, deposit destinations, fiat ramps, and internal accounts), see the [TypeScript SDK](https://www.npmjs.com/package/@1claw/sdk) and the [OpenAPI spec](https://www.npmjs.com/package/@1claw/openapi-spec).
+> **Note:** For the full v0.36 API surface (non-EVM transaction signing, OAuth, email OTP, spend policies, deposit destinations, fiat ramps, and internal accounts), see the [TypeScript SDK](https://www.npmjs.com/package/@1claw/sdk) and the [OpenAPI spec](https://www.npmjs.com/package/@1claw/openapi-spec).
 
 ## Options
 
