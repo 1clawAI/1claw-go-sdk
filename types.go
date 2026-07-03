@@ -564,24 +564,34 @@ type SigningKeyExport struct {
 
 // SignIntentParams are parameters for the unified sign endpoint.
 type SignIntentParams struct {
-	IntentType        string
-	Chain             string
-	SigningKeyPath    string
-	Message           string
-	TypedData         interface{}
-	To                string
-	Value             string
-	TxType            *int32
-	Data              string
-	Nonce             *int64
-	GasLimit          *int64
-	GasPrice          string
-	MaxFeePerGas      string
-	MaxPriorityFee    string
-	AccessList        interface{}
-	MaxFeePerBlobGas  string
-	BlobVersionedHash []string
-	AuthorizationList interface{}
+	IntentType        string                 `json:"intent_type"`
+	Chain             string                 `json:"chain"`
+	SigningKeyPath    string                 `json:"signing_key_path,omitempty"`
+	Message           string                 `json:"message,omitempty"`
+	TypedData         interface{}            `json:"typed_data,omitempty"`
+	Hash              string                 `json:"hash,omitempty"`
+	To                string                 `json:"to,omitempty"`
+	Value             string                 `json:"value,omitempty"`
+	TxType            *int32                 `json:"tx_type,omitempty"`
+	Data              string                 `json:"data,omitempty"`
+	Nonce             *int64                 `json:"nonce,omitempty"`
+	GasLimit          *int64                 `json:"gas_limit,omitempty"`
+	GasPrice          string                 `json:"gas_price,omitempty"`
+	MaxFeePerGas      string                 `json:"max_fee_per_gas,omitempty"`
+	MaxPriorityFee    string                 `json:"max_priority_fee_per_gas,omitempty"`
+	AccessList        interface{}            `json:"access_list,omitempty"`
+	MaxFeePerBlobGas  string                 `json:"max_fee_per_blob_gas,omitempty"`
+	BlobVersionedHash []string               `json:"blob_versioned_hashes,omitempty"`
+	AuthorizationList interface{}            `json:"authorization_list,omitempty"`
+	SignOnly          *bool                  `json:"sign_only,omitempty"`
+	DestinationTag    *int64                 `json:"destination_tag,omitempty"`
+	Memo              string                 `json:"memo,omitempty"`
+	FeeRateSatPerVB   *int64                 `json:"fee_rate_sat_per_vbyte,omitempty"`
+	FeeLimitSun       *int64                 `json:"fee_limit_sun,omitempty"`
+	TokenMint         string                 `json:"token_mint,omitempty"`
+	TokenDecimals     *int32                 `json:"token_decimals,omitempty"`
+	TTL               *int64                 `json:"ttl,omitempty"`
+	XrplTxJSON        map[string]interface{} `json:"xrpl_tx_json,omitempty"`
 }
 
 // SignIntentResult is the response from the unified sign endpoint.
