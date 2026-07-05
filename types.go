@@ -77,6 +77,11 @@ type Agent struct {
 	SSHPublicKey         string
 	ECDHPublicKey        string
 	ShroudEnabled        bool
+	TxTokenAllowlist     []string               `json:"tx_token_allowlist,omitempty"`
+	TxKnownTokensOnly   bool                    `json:"tx_known_tokens_only,omitempty"`
+	XRPLAllowedTxTypes   []string               `json:"xrpl_allowed_tx_types,omitempty"`
+	PerChainGuardrails   map[string]interface{}  `json:"per_chain_guardrails,omitempty"`
+	TxSpentTodayByChain  map[string]string       `json:"tx_spent_today_by_chain,omitempty"`
 	CreatedAt            time.Time
 	ExpiresAt            *time.Time
 	ApiKeyExpiresAt      *time.Time
@@ -115,7 +120,11 @@ type CreateAgentParams struct {
 	ShroudEnabled        bool
 	// ShroudConfig can be a struct that marshals to the API's expected shape.
 	// Pass nil to use defaults.
-	ShroudConfig interface{}
+	ShroudConfig         interface{}
+	TxTokenAllowlist     []string               `json:"tx_token_allowlist,omitempty"`
+	TxKnownTokensOnly   bool                    `json:"tx_known_tokens_only,omitempty"`
+	XRPLAllowedTxTypes   []string               `json:"xrpl_allowed_tx_types,omitempty"`
+	PerChainGuardrails   map[string]interface{}  `json:"per_chain_guardrails,omitempty"`
 }
 
 // UpdateAgentParams are parameters for updating an agent.
@@ -134,6 +143,10 @@ type UpdateAgentParams struct {
 	VaultIDs          []string
 	ShroudEnabled     *bool
 	ShroudConfig      interface{}
+	TxTokenAllowlist    []string               `json:"tx_token_allowlist,omitempty"`
+	TxKnownTokensOnly  *bool                   `json:"tx_known_tokens_only,omitempty"`
+	XRPLAllowedTxTypes  []string               `json:"xrpl_allowed_tx_types,omitempty"`
+	PerChainGuardrails  map[string]interface{}  `json:"per_chain_guardrails,omitempty"`
 }
 
 // --- API Key types ---
@@ -605,4 +618,26 @@ type SignIntentResult struct {
 	MessageHash   string
 	TypedDataHash string
 	TxType        *int32
+}
+
+// --- Known Token types ---
+
+// KnownToken represents a known/verified token in the chain registry.
+type KnownToken struct {
+	ID              string  `json:"id"`
+	Chain           string  `json:"chain"`
+	Symbol          string  `json:"symbol"`
+	Name            string  `json:"name"`
+	ContractAddress string  `json:"contract_address"`
+	Decimals        int     `json:"decimals"`
+	IsTestnet       bool    `json:"is_testnet"`
+	IsVerified      bool    `json:"is_verified"`
+	LogoURL         *string `json:"logo_url,omitempty"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+}
+
+// KnownTokenListResponse is the response from listing known tokens.
+type KnownTokenListResponse struct {
+	Tokens []KnownToken `json:"tokens"`
 }
