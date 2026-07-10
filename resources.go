@@ -74,3 +74,8 @@ type SigningKeysService struct {
 type PlatformService struct {
 	client *Client
 }
+
+// BindingsService provides execution intents binding operations.
+type BindingsService struct {
+	client *Client
+}

@@ -7,14 +7,14 @@ import "time"
 
 // Vault represents a vault.
 type Vault struct {
-	ID               string
-	Name             string
-	Description       string
-	CreatedBy         string
-	CreatedByType     string
-	CreatedAt         time.Time
-	CMEKEnabled       bool
-	CMEKFingerprint   string
+	ID              string
+	Name            string
+	Description     string
+	CreatedBy       string
+	CreatedByType   string
+	CreatedAt       time.Time
+	CMEKEnabled     bool
+	CMEKFingerprint string
 }
 
 // VaultList is the response from listing vaults.
@@ -58,34 +58,36 @@ type SecretList struct {
 
 // Agent represents an agent.
 type Agent struct {
-	ID                   string
-	Name                 string
-	Description          string
-	AuthMethod           string
-	Scopes               []string
-	IsActive             bool
-	IntentsAPIEnabled    bool
-	TxToAllowlist        []string
-	TxMaxValueEth        string
-	TxDailyLimitEth      string
-	TxAllowedChains      []string
-	TokenTtlSeconds      *int32
-	VaultIDs             []string
-	ClientCertFingerprint string
-	OIDCIssuer           string
-	OIDCClientID         string
-	SSHPublicKey         string
-	ECDHPublicKey        string
-	ShroudEnabled        bool
-	TxTokenAllowlist     []string               `json:"tx_token_allowlist,omitempty"`
-	TxKnownTokensOnly   bool                    `json:"tx_known_tokens_only,omitempty"`
-	XRPLAllowedTxTypes   []string               `json:"xrpl_allowed_tx_types,omitempty"`
-	PerChainGuardrails   map[string]interface{}  `json:"per_chain_guardrails,omitempty"`
-	TxSpentTodayByChain  map[string]string       `json:"tx_spent_today_by_chain,omitempty"`
-	CreatedAt            time.Time
-	ExpiresAt            *time.Time
-	ApiKeyExpiresAt      *time.Time
-	LastActiveAt         *time.Time
+	ID                      string
+	Name                    string
+	Description             string
+	AuthMethod              string
+	Scopes                  []string
+	IsActive                bool
+	IntentsAPIEnabled       bool
+	TxToAllowlist           []string
+	TxMaxValueEth           string
+	TxDailyLimitEth         string
+	TxAllowedChains         []string
+	TokenTtlSeconds         *int32
+	VaultIDs                []string
+	ClientCertFingerprint   string
+	OIDCIssuer              string
+	OIDCClientID            string
+	SSHPublicKey            string
+	ECDHPublicKey           string
+	ShroudEnabled           bool
+	TxTokenAllowlist        []string               `json:"tx_token_allowlist,omitempty"`
+	TxKnownTokensOnly       bool                   `json:"tx_known_tokens_only,omitempty"`
+	XRPLAllowedTxTypes      []string               `json:"xrpl_allowed_tx_types,omitempty"`
+	PerChainGuardrails      map[string]interface{} `json:"per_chain_guardrails,omitempty"`
+	TxSpentTodayByChain     map[string]string      `json:"tx_spent_today_by_chain,omitempty"`
+	ExecutionIntentsEnabled bool                   `json:"execution_intents_enabled,omitempty"`
+	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
+	CreatedAt               time.Time
+	ExpiresAt               *time.Time
+	ApiKeyExpiresAt         *time.Time
+	LastActiveAt            *time.Time
 }
 
 // AgentCreated is the response from creating an agent.
@@ -101,65 +103,69 @@ type AgentList struct {
 
 // CreateAgentParams are parameters for creating an agent.
 type CreateAgentParams struct {
-	Name                 string
-	Description          string
-	AuthMethod           string
-	Scopes               []string
-	ExpiresAt            *time.Time
-	ApiKeyExpiresAt      *time.Time
-	IntentsAPIEnabled    bool
-	TxToAllowlist        []string
-	TxMaxValueEth        string
-	TxDailyLimitEth      string
-	TxAllowedChains      []string
-	TokenTtlSeconds      *int32
-	VaultIDs             []string
+	Name                  string
+	Description           string
+	AuthMethod            string
+	Scopes                []string
+	ExpiresAt             *time.Time
+	ApiKeyExpiresAt       *time.Time
+	IntentsAPIEnabled     bool
+	TxToAllowlist         []string
+	TxMaxValueEth         string
+	TxDailyLimitEth       string
+	TxAllowedChains       []string
+	TokenTtlSeconds       *int32
+	VaultIDs              []string
 	ClientCertFingerprint string
-	OIDCIssuer           string
-	OIDCClientID         string
-	ShroudEnabled        bool
+	OIDCIssuer            string
+	OIDCClientID          string
+	ShroudEnabled         bool
 	// ShroudConfig can be a struct that marshals to the API's expected shape.
 	// Pass nil to use defaults.
-	ShroudConfig         interface{}
-	TxTokenAllowlist     []string               `json:"tx_token_allowlist,omitempty"`
-	TxKnownTokensOnly   bool                    `json:"tx_known_tokens_only,omitempty"`
-	XRPLAllowedTxTypes   []string               `json:"xrpl_allowed_tx_types,omitempty"`
-	PerChainGuardrails   map[string]interface{}  `json:"per_chain_guardrails,omitempty"`
+	ShroudConfig            interface{}
+	TxTokenAllowlist        []string               `json:"tx_token_allowlist,omitempty"`
+	TxKnownTokensOnly       bool                   `json:"tx_known_tokens_only,omitempty"`
+	XRPLAllowedTxTypes      []string               `json:"xrpl_allowed_tx_types,omitempty"`
+	PerChainGuardrails      map[string]interface{} `json:"per_chain_guardrails,omitempty"`
+	ExecutionIntentsEnabled bool                   `json:"execution_intents_enabled,omitempty"`
+	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
 }
 
 // UpdateAgentParams are parameters for updating an agent.
 type UpdateAgentParams struct {
-	Name              *string
-	Scopes            []string
-	IsActive          *bool
-	ExpiresAt         *time.Time
-	ApiKeyExpiresAt   *time.Time
-	IntentsAPIEnabled *bool
-	TxToAllowlist     []string
-	TxMaxValueEth     *string
-	TxDailyLimitEth   *string
-	TxAllowedChains   []string
-	TokenTtlSeconds   *int32
-	VaultIDs          []string
-	ShroudEnabled     *bool
-	ShroudConfig      interface{}
-	TxTokenAllowlist    []string               `json:"tx_token_allowlist,omitempty"`
-	TxKnownTokensOnly  *bool                   `json:"tx_known_tokens_only,omitempty"`
-	XRPLAllowedTxTypes  []string               `json:"xrpl_allowed_tx_types,omitempty"`
-	PerChainGuardrails  map[string]interface{}  `json:"per_chain_guardrails,omitempty"`
+	Name                    *string
+	Scopes                  []string
+	IsActive                *bool
+	ExpiresAt               *time.Time
+	ApiKeyExpiresAt         *time.Time
+	IntentsAPIEnabled       *bool
+	TxToAllowlist           []string
+	TxMaxValueEth           *string
+	TxDailyLimitEth         *string
+	TxAllowedChains         []string
+	TokenTtlSeconds         *int32
+	VaultIDs                []string
+	ShroudEnabled           *bool
+	ShroudConfig            interface{}
+	TxTokenAllowlist        []string               `json:"tx_token_allowlist,omitempty"`
+	TxKnownTokensOnly       *bool                  `json:"tx_known_tokens_only,omitempty"`
+	XRPLAllowedTxTypes      []string               `json:"xrpl_allowed_tx_types,omitempty"`
+	PerChainGuardrails      map[string]interface{} `json:"per_chain_guardrails,omitempty"`
+	ExecutionIntentsEnabled *bool                  `json:"execution_intents_enabled,omitempty"`
+	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
 }
 
 // --- API Key types ---
 
 // APIKey represents an API key (metadata only).
 type APIKey struct {
-	ID        string
-	Name      string
-	KeyPrefix string
-	Scopes    []string
-	IsActive  bool
-	CreatedAt *time.Time
-	ExpiresAt *time.Time
+	ID         string
+	Name       string
+	KeyPrefix  string
+	Scopes     []string
+	IsActive   bool
+	CreatedAt  *time.Time
+	ExpiresAt  *time.Time
 	LastUsedAt *time.Time
 }
 
@@ -213,8 +219,8 @@ type UserProfile struct {
 type Policy struct {
 	ID                string
 	VaultID           string
-	SecretPathPattern  string
-	PrincipalType      string
+	SecretPathPattern string
+	PrincipalType     string
 	PrincipalID       string
 	Permissions       []string
 	Conditions        map[string]interface{}
@@ -251,12 +257,12 @@ type UpdatePolicyParams struct {
 
 // Share represents a share.
 type Share struct {
-	ID               string
-	ShareURL         string
-	RecipientType    string
-	RecipientEmail   string
-	ExpiresAt        *time.Time
-	MaxAccessCount   *int32
+	ID             string
+	ShareURL       string
+	RecipientType  string
+	RecipientEmail string
+	ExpiresAt      *time.Time
+	MaxAccessCount *int32
 }
 
 // ShareList is the response from listing shares.
@@ -266,14 +272,14 @@ type ShareList struct {
 
 // CreateShareParams are parameters for creating a share.
 type CreateShareParams struct {
-	RecipientType   string
-	RecipientID     string
-	Email           string
-	Permissions     []string
-	MaxAccessCount  *int32
-	ExpiresAt       time.Time
-	Passphrase      string
-	IPAllowlist     []string
+	RecipientType  string
+	RecipientID    string
+	Email          string
+	Permissions    []string
+	MaxAccessCount *int32
+	ExpiresAt      time.Time
+	Passphrase     string
+	IPAllowlist    []string
 }
 
 // --- Org types ---
@@ -349,9 +355,9 @@ type Subscription struct {
 
 // CreditBalance is the credit balance response.
 type CreditBalance struct {
-	BalanceCents           int32
-	BalanceUsd             string
-	ExpiringWithin90Days   interface{}
+	BalanceCents         int32
+	BalanceUsd           string
+	ExpiringWithin90Days interface{}
 }
 
 // --- Audit types ---
@@ -380,10 +386,10 @@ type AuditEvents struct {
 
 // PaymentRequirementAccept represents a payment option in a 402 response.
 type PaymentRequirementAccept struct {
-	Scheme                 string
-	Network                string
-	PayTo                  string
-	Price                  string
+	Scheme                  string
+	Network                 string
+	PayTo                   string
+	Price                   string
 	RequiredDeadlineSeconds *int32
 }
 
@@ -640,4 +646,93 @@ type KnownToken struct {
 // KnownTokenListResponse is the response from listing known tokens.
 type KnownTokenListResponse struct {
 	Tokens []KnownToken `json:"tokens"`
+}
+
+// --- Binding types (Execution Intents) ---
+
+// Binding represents a named credential handle for execution intents.
+type Binding struct {
+	ID          string                 `json:"id"`
+	AgentID     string                 `json:"agent_id"`
+	BindingType string                 `json:"binding_type"`
+	Name        string                 `json:"name"`
+	Config      map[string]interface{} `json:"config"`
+	Guardrails  map[string]interface{} `json:"guardrails"`
+	IsActive    bool                   `json:"is_active"`
+	CreatedAt   string                 `json:"created_at"`
+	UpdatedAt   string                 `json:"updated_at"`
+}
+
+// BindingList is the response from listing bindings.
+type BindingList struct {
+	Bindings []Binding `json:"bindings"`
+}
+
+// CreateBindingParams are parameters for creating a binding.
+type CreateBindingParams struct {
+	Name        string                 `json:"name"`
+	BindingType string                 `json:"binding_type"`
+	Config      map[string]interface{} `json:"config,omitempty"`
+	Guardrails  map[string]interface{} `json:"guardrails,omitempty"`
+	Credential  map[string]interface{} `json:"credential,omitempty"`
+}
+
+// UpdateBindingParams are parameters for updating a binding.
+type UpdateBindingParams struct {
+	Config     map[string]interface{} `json:"config,omitempty"`
+	Guardrails map[string]interface{} `json:"guardrails,omitempty"`
+	IsActive   *bool                  `json:"is_active,omitempty"`
+	Credential map[string]interface{} `json:"credential,omitempty"`
+}
+
+// TestBindingParams are optional parameters for testing binding connectivity.
+type TestBindingParams struct {
+	TimeoutMs *int64 `json:"timeout_ms,omitempty"`
+}
+
+// TestBindingResult is the response from testing a binding.
+type TestBindingResult struct {
+	Success   bool    `json:"success"`
+	LatencyMs int64   `json:"latency_ms"`
+	Error     *string `json:"error,omitempty"`
+}
+
+// ExecuteParams are parameters for executing an intent through a binding.
+type ExecuteParams struct {
+	Binding       string                 `json:"binding"`
+	IntentType    string                 `json:"intent_type"`
+	ExecutionMode string                 `json:"execution_mode,omitempty"`
+	Params        map[string]interface{} `json:"params"`
+}
+
+// ExecuteResult is the response from executing an intent.
+type ExecuteResult struct {
+	ExecutionID       string                 `json:"execution_id"`
+	Status            string                 `json:"status"`
+	Result            map[string]interface{} `json:"result,omitempty"`
+	Error             *string                `json:"error,omitempty"`
+	DurationMs        *int64                 `json:"duration_ms,omitempty"`
+	RedactionsApplied *int32                 `json:"redactions_applied,omitempty"`
+}
+
+// ExecutionEvent represents a single execution event for audit/billing.
+type ExecutionEvent struct {
+	ID                string                 `json:"id"`
+	AgentID           string                 `json:"agent_id"`
+	BindingID         string                 `json:"binding_id"`
+	IntentType        string                 `json:"intent_type"`
+	ExecutionMode     string                 `json:"execution_mode"`
+	Status            string                 `json:"status"`
+	RequestSummary    map[string]interface{} `json:"request_summary,omitempty"`
+	ResultSummary     map[string]interface{} `json:"result_summary,omitempty"`
+	ErrorMessage      *string                `json:"error_message,omitempty"`
+	DurationMs        *int64                 `json:"duration_ms,omitempty"`
+	CostCents         *int32                 `json:"cost_cents,omitempty"`
+	RedactionsApplied *int32                 `json:"redactions_applied,omitempty"`
+	CreatedAt         string                 `json:"created_at"`
+}
+
+// ExecutionEventList is the response from listing execution events.
+type ExecutionEventList struct {
+	Events []ExecutionEvent `json:"events"`
 }

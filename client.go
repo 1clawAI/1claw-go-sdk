@@ -39,7 +39,8 @@ type Client struct {
 	X402        *X402Service
 	Treasury    *TreasuryService
 	SigningKeys *SigningKeysService
-	Platform   *PlatformService
+	Platform    *PlatformService
+	Bindings    *BindingsService
 }
 
 // Option configures the Client.
@@ -164,6 +165,7 @@ func New(opts ...Option) (*Client, error) {
 	client.Treasury = &TreasuryService{client: client}
 	client.SigningKeys = &SigningKeysService{client: client}
 	client.Platform = &PlatformService{client: client}
+	client.Bindings = &BindingsService{client: client}
 	return client, nil
 }
 
