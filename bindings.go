@@ -51,6 +51,16 @@ func (s *BindingsService) Delete(ctx context.Context, agentID, bindingID string)
 	return s.client.doJSON(ctx, "DELETE", fmt.Sprintf("/v1/agents/%s/bindings/%s", agentID, url.PathEscape(bindingID)), nil, nil)
 }
 
+// RotateCredential overwrites a binding's stored credential.
+func (s *BindingsService) RotateCredential(ctx context.Context, agentID, bindingID string, params RotateCredentialParams) (*Binding, error) {
+	var result Binding
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/agents/%s/bindings/%s/rotate-credential", agentID, url.PathEscape(bindingID)), params, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 // Test verifies connectivity for a binding.
 func (s *BindingsService) Test(ctx context.Context, agentID, bindingID string, params *TestBindingParams) (*TestBindingResult, error) {
 	var body interface{}

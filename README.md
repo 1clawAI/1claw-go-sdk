@@ -69,10 +69,33 @@ client, _ := oneclaw.New(
 | `Treasury.Wallets` | Multi-chain wallet management: generate, list, get, balance, send, swap, export, rotate, deactivate |
 | `Treasury.Proposals` | Treasury proposals: create, list, get, sign, execute, cancel |
 | `SigningKeys`      | Multi-chain signing key management (create, list, rotate, deactivate, export) |
+| `Bindings`         | Execution Intents — bindings CRUD, execute, rotate credential, history |
 | `Platform`         | Platform API — build multi-tenant apps on 1Claw          |
 | `Webhooks`         | Register and manage event webhooks                       |
 | `Risk`             | Risk events, verdicts, honeytokens (v0.36+)               |
 | `Approvals`        | Human-in-the-loop approval workflow                      |
+
+## Execution Intents (Bindings)
+
+```go
+binding, _ := client.Bindings.Create(ctx, agentID, oneclaw.CreateBindingParams{
+    Name:        "httpbin",
+    BindingType: "http",
+    Config:      map[string]interface{}{"base_url": "https://httpbin.org"},
+})
+
+result, _ := client.Bindings.Execute(ctx, agentID, oneclaw.ExecuteParams{
+    Binding:    "httpbin",
+    IntentType: "http",
+    Params:     map[string]interface{}{"method": "GET", "path": "/get"},
+})
+
+_, _ = client.Bindings.RotateCredential(ctx, agentID, binding.ID, oneclaw.RotateCredentialParams{
+    Credential: map[string]interface{}{"token": "new-secret"},
+})
+
+events, _ := client.Bindings.ListExecutions(ctx, agentID, nil, nil)
+```
 
 ## Platform API
 

@@ -658,8 +658,9 @@ type Binding struct {
 	Name        string                 `json:"name"`
 	Config      map[string]interface{} `json:"config"`
 	Guardrails  map[string]interface{} `json:"guardrails"`
-	IsActive    bool                   `json:"is_active"`
-	CreatedAt   string                 `json:"created_at"`
+	IsActive       bool                   `json:"is_active"`
+	CredentialSet  bool                   `json:"credential_set,omitempty"`
+	CreatedAt      string                 `json:"created_at"`
 	UpdatedAt   string                 `json:"updated_at"`
 }
 
@@ -683,6 +684,11 @@ type UpdateBindingParams struct {
 	Guardrails map[string]interface{} `json:"guardrails,omitempty"`
 	IsActive   *bool                  `json:"is_active,omitempty"`
 	Credential map[string]interface{} `json:"credential,omitempty"`
+}
+
+// RotateCredentialParams are parameters for rotating a binding credential.
+type RotateCredentialParams struct {
+	Credential map[string]interface{} `json:"credential"`
 }
 
 // TestBindingParams are optional parameters for testing binding connectivity.
