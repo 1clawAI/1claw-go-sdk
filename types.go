@@ -86,6 +86,11 @@ type Agent struct {
 	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
 	IntentsRequireTee       bool                   `json:"intents_require_tee,omitempty"`
 	ExecutionRequireTee     bool                   `json:"execution_require_tee,omitempty"`
+	TxMaxPerDay             *int                   `json:"tx_max_per_day,omitempty"`
+	TxOverheadBudget        map[string]string      `json:"tx_overhead_budget,omitempty"`
+	SolanaAtaAllowlist      []string               `json:"solana_ata_allowlist,omitempty"`
+	TxCountToday            *int64                 `json:"tx_count_today,omitempty"`
+	TxOverheadTodayByChain  map[string]string      `json:"tx_overhead_today_by_chain,omitempty"`
 	CreatedAt               time.Time
 	ExpiresAt               *time.Time
 	ApiKeyExpiresAt         *time.Time
@@ -133,6 +138,9 @@ type CreateAgentParams struct {
 	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
 	IntentsRequireTee       bool                   `json:"intents_require_tee,omitempty"`
 	ExecutionRequireTee     bool                   `json:"execution_require_tee,omitempty"`
+	TxMaxPerDay             *int                   `json:"tx_max_per_day,omitempty"`
+	TxOverheadBudget        map[string]string      `json:"tx_overhead_budget,omitempty"`
+	SolanaAtaAllowlist      []string               `json:"solana_ata_allowlist,omitempty"`
 }
 
 // UpdateAgentParams are parameters for updating an agent.
@@ -158,6 +166,9 @@ type UpdateAgentParams struct {
 	ExecutionIntentsEnabled *bool                  `json:"execution_intents_enabled,omitempty"`
 	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
 	IntentsRequireTee       *bool                  `json:"intents_require_tee,omitempty"`
+	TxMaxPerDay             *int                   `json:"tx_max_per_day,omitempty"`
+	TxOverheadBudget        map[string]string      `json:"tx_overhead_budget,omitempty"`
+	SolanaAtaAllowlist      []string               `json:"solana_ata_allowlist,omitempty"`
 	ExecutionRequireTee     *bool                  `json:"execution_require_tee,omitempty"`
 }
 
