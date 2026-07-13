@@ -650,18 +650,30 @@ type KnownTokenListResponse struct {
 
 // --- Binding types (Execution Intents) ---
 
+// CredentialSource describes how a binding's credential is sourced:
+// inline (copied into __agent-keys) or vault_ref (live pointer to an existing secret).
+type CredentialSource struct {
+	Type    string                 `json:"type"`
+	Value   map[string]interface{} `json:"value,omitempty"`
+	VaultID string                 `json:"vault_id,omitempty"`
+	Path    string                 `json:"path,omitempty"`
+}
+
 // Binding represents a named credential handle for execution intents.
 type Binding struct {
-	ID          string                 `json:"id"`
-	AgentID     string                 `json:"agent_id"`
-	BindingType string                 `json:"binding_type"`
-	Name        string                 `json:"name"`
-	Config      map[string]interface{} `json:"config"`
-	Guardrails  map[string]interface{} `json:"guardrails"`
-	IsActive       bool                   `json:"is_active"`
-	CredentialSet  bool                   `json:"credential_set,omitempty"`
-	CreatedAt      string                 `json:"created_at"`
-	UpdatedAt   string                 `json:"updated_at"`
+	ID                   string                 `json:"id"`
+	AgentID              string                 `json:"agent_id"`
+	BindingType          string                 `json:"binding_type"`
+	Name                 string                 `json:"name"`
+	Config               map[string]interface{} `json:"config"`
+	Guardrails           map[string]interface{} `json:"guardrails"`
+	IsActive             bool                   `json:"is_active"`
+	CredentialSet        bool                   `json:"credential_set,omitempty"`
+	CredentialSourceType *string                `json:"credential_source_type,omitempty"`
+	CredentialVaultID    *string                `json:"credential_vault_id,omitempty"`
+	CredentialPath       *string                `json:"credential_path,omitempty"`
+	CreatedAt            string                 `json:"created_at"`
+	UpdatedAt            string                 `json:"updated_at"`
 }
 
 // BindingList is the response from listing bindings.
@@ -671,19 +683,21 @@ type BindingList struct {
 
 // CreateBindingParams are parameters for creating a binding.
 type CreateBindingParams struct {
-	Name        string                 `json:"name"`
-	BindingType string                 `json:"binding_type"`
-	Config      map[string]interface{} `json:"config,omitempty"`
-	Guardrails  map[string]interface{} `json:"guardrails,omitempty"`
-	Credential  map[string]interface{} `json:"credential,omitempty"`
+	Name             string                 `json:"name"`
+	BindingType      string                 `json:"binding_type"`
+	Config           map[string]interface{} `json:"config,omitempty"`
+	Guardrails       map[string]interface{} `json:"guardrails,omitempty"`
+	Credential       map[string]interface{} `json:"credential,omitempty"`
+	CredentialSource *CredentialSource      `json:"credential_source,omitempty"`
 }
 
 // UpdateBindingParams are parameters for updating a binding.
 type UpdateBindingParams struct {
-	Config     map[string]interface{} `json:"config,omitempty"`
-	Guardrails map[string]interface{} `json:"guardrails,omitempty"`
-	IsActive   *bool                  `json:"is_active,omitempty"`
-	Credential map[string]interface{} `json:"credential,omitempty"`
+	Config           map[string]interface{} `json:"config,omitempty"`
+	Guardrails       map[string]interface{} `json:"guardrails,omitempty"`
+	IsActive         *bool                  `json:"is_active,omitempty"`
+	Credential       map[string]interface{} `json:"credential,omitempty"`
+	CredentialSource *CredentialSource      `json:"credential_source,omitempty"`
 }
 
 // RotateCredentialParams are parameters for rotating a binding credential.

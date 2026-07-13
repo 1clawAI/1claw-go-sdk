@@ -78,10 +78,24 @@ client, _ := oneclaw.New(
 ## Execution Intents (Bindings)
 
 ```go
+// Create a binding with an inline credential
 binding, _ := client.Bindings.Create(ctx, agentID, oneclaw.CreateBindingParams{
     Name:        "httpbin",
     BindingType: "http",
     Config:      map[string]interface{}{"base_url": "https://httpbin.org"},
+    Credential:  map[string]interface{}{"token": "secret"},
+})
+
+// Create a binding with a vault_ref credential (live-pointer to an existing secret)
+binding2, _ := client.Bindings.Create(ctx, agentID, oneclaw.CreateBindingParams{
+    Name:        "stripe-api",
+    BindingType: "http",
+    Config:      map[string]interface{}{"base_url": "https://api.stripe.com"},
+    CredentialSource: &oneclaw.CredentialSource{
+        Type:    "vault_ref",
+        VaultID: vaultID,
+        Path:    "integrations/stripe-key",
+    },
 })
 
 result, _ := client.Bindings.Execute(ctx, agentID, oneclaw.ExecuteParams{
