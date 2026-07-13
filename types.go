@@ -84,6 +84,8 @@ type Agent struct {
 	TxSpentTodayByChain     map[string]string      `json:"tx_spent_today_by_chain,omitempty"`
 	ExecutionIntentsEnabled bool                   `json:"execution_intents_enabled,omitempty"`
 	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
+	IntentsRequireTee       bool                   `json:"intents_require_tee,omitempty"`
+	ExecutionRequireTee     bool                   `json:"execution_require_tee,omitempty"`
 	CreatedAt               time.Time
 	ExpiresAt               *time.Time
 	ApiKeyExpiresAt         *time.Time
@@ -129,6 +131,8 @@ type CreateAgentParams struct {
 	PerChainGuardrails      map[string]interface{} `json:"per_chain_guardrails,omitempty"`
 	ExecutionIntentsEnabled bool                   `json:"execution_intents_enabled,omitempty"`
 	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
+	IntentsRequireTee       bool                   `json:"intents_require_tee,omitempty"`
+	ExecutionRequireTee     bool                   `json:"execution_require_tee,omitempty"`
 }
 
 // UpdateAgentParams are parameters for updating an agent.
@@ -153,6 +157,8 @@ type UpdateAgentParams struct {
 	PerChainGuardrails      map[string]interface{} `json:"per_chain_guardrails,omitempty"`
 	ExecutionIntentsEnabled *bool                  `json:"execution_intents_enabled,omitempty"`
 	ExecutionGuardrails     map[string]interface{} `json:"execution_guardrails,omitempty"`
+	IntentsRequireTee       *bool                  `json:"intents_require_tee,omitempty"`
+	ExecutionRequireTee     *bool                  `json:"execution_require_tee,omitempty"`
 }
 
 // --- API Key types ---
