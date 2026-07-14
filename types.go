@@ -665,6 +665,85 @@ type KnownTokenListResponse struct {
 	Tokens []KnownToken `json:"tokens"`
 }
 
+// --- Payment Card types ---
+
+// OrderCardRequest are parameters for ordering a prepaid or gift card.
+type OrderCardRequest struct {
+	Kind         string  `json:"kind"`
+	AmountUSD    string  `json:"amount_usd"`
+	LasoServerID *string `json:"laso_server_id,omitempty"`
+	Country      *string `json:"country,omitempty"`
+}
+
+// CardResponse is a masked card view — never contains PAN/CVV.
+type CardResponse struct {
+	ID             string                 `json:"id"`
+	AgentID        *string                `json:"agent_id,omitempty"`
+	Issuer         string                 `json:"issuer"`
+	Kind           string                 `json:"kind"`
+	Brand          *string                `json:"brand,omitempty"`
+	Last4          *string                `json:"last4,omitempty"`
+	ExpMonth       *int                   `json:"exp_month,omitempty"`
+	ExpYear        *int                   `json:"exp_year,omitempty"`
+	Currency       string                 `json:"currency"`
+	OrderAmountUSD *string                `json:"order_amount_usd,omitempty"`
+	Balance        *string                `json:"balance,omitempty"`
+	Status         string                 `json:"status"`
+	StorageMode    string                 `json:"storage_mode"`
+	RevealPolicy   map[string]interface{} `json:"reveal_policy"`
+	VoidAfter      *string                `json:"void_after,omitempty"`
+	CreatedAt      string                 `json:"created_at"`
+	UpdatedAt      string                 `json:"updated_at"`
+}
+
+// CardListResponse is the response from listing cards.
+type CardListResponse struct {
+	Cards []CardResponse `json:"cards"`
+}
+
+// CardRevealResponse contains full card details (sensitive).
+type CardRevealResponse struct {
+	ID         string      `json:"id"`
+	PAN        *string     `json:"pan,omitempty"`
+	CVV        *string     `json:"cvv,omitempty"`
+	ExpMonth   *int        `json:"exp_month,omitempty"`
+	ExpYear    *int        `json:"exp_year,omitempty"`
+	Brand      *string     `json:"brand,omitempty"`
+	Redemption interface{} `json:"redemption,omitempty"`
+	Disclaimer string      `json:"disclaimer"`
+}
+
+// UpdateCardRequest are parameters for updating a card's reveal policy.
+type UpdateCardRequest struct {
+	AgentReveal     *bool   `json:"agent_reveal,omitempty"`
+	MaxReveals      *int    `json:"max_reveals,omitempty"`
+	RevealExpiresAt *string `json:"reveal_expires_at,omitempty"`
+	VoidAfter       *string `json:"void_after,omitempty"`
+}
+
+// ImportCardRequest are parameters for manually importing a card.
+type ImportCardRequest struct {
+	PAN      string  `json:"pan"`
+	CVV      string  `json:"cvv"`
+	ExpMonth int     `json:"exp_month"`
+	ExpYear  int     `json:"exp_year"`
+	Brand    *string `json:"brand,omitempty"`
+	Currency *string `json:"currency,omitempty"`
+	Balance  *string `json:"balance,omitempty"`
+	AgentID  *string `json:"agent_id,omitempty"`
+}
+
+// SearchGiftCardsRequest are parameters for searching gift-card brands.
+type SearchGiftCardsRequest struct {
+	Query   *string `json:"query,omitempty"`
+	Country *string `json:"country,omitempty"`
+}
+
+// SearchGiftCardsResponse is the response from searching gift cards.
+type SearchGiftCardsResponse struct {
+	Results []map[string]interface{} `json:"results"`
+}
+
 // --- Binding types (Execution Intents) ---
 
 // CredentialSource describes how a binding's credential is sourced:

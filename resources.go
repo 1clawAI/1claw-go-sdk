@@ -79,3 +79,8 @@ type PlatformService struct {
 type BindingsService struct {
 	client *Client
 }
+
+// CardsService provides payment card vault operations.
+type CardsService struct {
+	client *Client
+}

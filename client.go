@@ -41,6 +41,7 @@ type Client struct {
 	SigningKeys *SigningKeysService
 	Platform    *PlatformService
 	Bindings    *BindingsService
+	Cards       *CardsService
 }
 
 // Option configures the Client.
@@ -166,6 +167,7 @@ func New(opts ...Option) (*Client, error) {
 	client.SigningKeys = &SigningKeysService{client: client}
 	client.Platform = &PlatformService{client: client}
 	client.Bindings = &BindingsService{client: client}
+	client.Cards = &CardsService{client: client}
 	return client, nil
 }
 
