@@ -42,6 +42,10 @@ type Client struct {
 	Platform    *PlatformService
 	Bindings    *BindingsService
 	Cards       *CardsService
+	Automations *AutomationsService
+	Memory      *MemoryService
+	Runtimes    *RuntimesService
+	Discovery   *DiscoveryService
 }
 
 // Option configures the Client.
@@ -168,6 +172,10 @@ func New(opts ...Option) (*Client, error) {
 	client.Platform = &PlatformService{client: client}
 	client.Bindings = &BindingsService{client: client}
 	client.Cards = &CardsService{client: client}
+	client.Automations = &AutomationsService{client: client}
+	client.Memory = &MemoryService{client: client}
+	client.Runtimes = &RuntimesService{client: client}
+	client.Discovery = &DiscoveryService{client: client}
 	return client, nil
 }
 

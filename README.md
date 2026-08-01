@@ -74,6 +74,10 @@ client, _ := oneclaw.New(
 | `Webhooks`         | Register and manage event webhooks                       |
 | `Risk`             | Risk events, verdicts, honeytokens (v0.36+)               |
 | `Approvals`        | Human-in-the-loop approval workflow                      |
+| `Automations`      | Cron-based scheduled tasks for agents                    |
+| `Memory`           | Persistent vector memory — store and search              |
+| `Runtimes`         | Managed runtime environments — deploy, scale, monitor    |
+| `Discovery`        | Agent directory — publish, search, manage listings       |
 
 ## Execution Intents (Bindings)
 
@@ -142,7 +146,74 @@ client, _ := oneclaw.New(
 )
 ```
 
-> **Note:** For the full v0.36 API surface (non-EVM transaction signing, OAuth, email OTP, spend policies, deposit destinations, fiat ramps, and internal accounts), see the [TypeScript SDK](https://www.npmjs.com/package/@1claw/sdk) and the [OpenAPI spec](https://www.npmjs.com/package/@1claw/openapi-spec).
+> **Note:** For the full v0.42 API surface (non-EVM transaction signing, OAuth, email OTP, spend policies, deposit destinations, fiat ramps, and internal accounts), see the [TypeScript SDK](https://www.npmjs.com/package/@1claw/sdk) and the [OpenAPI spec](https://www.npmjs.com/package/@1claw/openapi-spec).
+
+## Automations
+
+```go
+// Create a cron-based automation
+auto, _ := client.Automations.Create(ctx, agentID, oneclaw.CreateAutomationParams{
+    Name:       "rotate-api-key",
+    Schedule:   "0 0 * * 0",
+    ActionType: "secret_rotate",
+    ActionConfig: map[string]interface{}{
+        "path": "api-keys/stripe",
+    },
+})
+
+// List automations
+list, _ := client.Automations.List(ctx, agentID)
+
+// Trigger manually
+_ = client.Automations.Trigger(ctx, agentID, auto.ID)
+```
+
+## Agent Memory
+
+```go
+// Store a memory entry
+entry, _ := client.Memory.Store(ctx, agentID, oneclaw.StoreMemoryParams{
+    Content:   "User prefers JSON output",
+    Namespace: "preferences",
+})
+
+// Semantic search
+results, _ := client.Memory.Search(ctx, agentID, oneclaw.SearchMemoryParams{
+    Query: "output format preferences",
+    Limit: intPtr(5),
+})
+
+// Clear all memory
+_ = client.Memory.Clear(ctx, agentID)
+```
+
+## Runtimes
+
+```go
+// Deploy a runtime
+runtime, _ := client.Runtimes.Create(ctx, oneclaw.CreateRuntimeParams{
+    AgentID: agentID,
+    Name:    "my-agent",
+    Image:   "ghcr.io/my-org/agent:latest",
+    Env:     map[string]string{"MODEL": "gpt-4"},
+})
+
+// Restart
+_ = client.Runtimes.Restart(ctx, runtime.ID)
+```
+
+## Discovery
+
+```go
+// Publish to directory
+listing, _ := client.Discovery.Publish(ctx, agentID, oneclaw.PublishParams{
+    Description: "Automated treasury management agent",
+    Tags:        []string{"defi", "treasury"},
+})
+
+// Search
+results, _ := client.Discovery.Search(ctx, "treasury management")
+```
 
 ## Options
 

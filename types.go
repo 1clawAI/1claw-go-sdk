@@ -852,3 +852,174 @@ type ExecutionEvent struct {
 type ExecutionEventList struct {
 	Events []ExecutionEvent `json:"events"`
 }
+
+// --- Automation types ---
+
+// Automation represents a scheduled automation for an agent.
+type Automation struct {
+	ID           string                 `json:"id"`
+	AgentID      string                 `json:"agent_id"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description,omitempty"`
+	Schedule     string                 `json:"schedule"`
+	ActionType   string                 `json:"action_type"`
+	ActionConfig map[string]interface{} `json:"action_config"`
+	Enabled      bool                   `json:"enabled"`
+	LastRunAt    *string                `json:"last_run_at,omitempty"`
+	NextRunAt    *string                `json:"next_run_at,omitempty"`
+	CreatedAt    string                 `json:"created_at"`
+	UpdatedAt    string                 `json:"updated_at"`
+}
+
+// AutomationList is the response from listing automations.
+type AutomationList struct {
+	Automations []Automation `json:"automations"`
+}
+
+// CreateAutomationParams are parameters for creating an automation.
+type CreateAutomationParams struct {
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description,omitempty"`
+	Schedule     string                 `json:"schedule"`
+	ActionType   string                 `json:"action_type"`
+	ActionConfig map[string]interface{} `json:"action_config"`
+	Enabled      *bool                  `json:"enabled,omitempty"`
+}
+
+// UpdateAutomationParams are parameters for updating an automation.
+type UpdateAutomationParams struct {
+	Name         *string                `json:"name,omitempty"`
+	Schedule     *string                `json:"schedule,omitempty"`
+	ActionConfig map[string]interface{} `json:"action_config,omitempty"`
+	Enabled      *bool                  `json:"enabled,omitempty"`
+}
+
+// AutomationRun represents a single execution of an automation.
+type AutomationRun struct {
+	ID           string  `json:"id"`
+	AutomationID string  `json:"automation_id"`
+	Status       string  `json:"status"`
+	StartedAt    string  `json:"started_at"`
+	CompletedAt  *string `json:"completed_at,omitempty"`
+	Error        *string `json:"error,omitempty"`
+}
+
+// AutomationRunList is the response from listing automation runs.
+type AutomationRunList struct {
+	Runs []AutomationRun `json:"runs"`
+}
+
+// --- Memory types ---
+
+// MemoryEntry represents a stored memory entry for an agent.
+type MemoryEntry struct {
+	ID        string                 `json:"id"`
+	AgentID   string                 `json:"agent_id"`
+	Content   string                 `json:"content"`
+	Namespace string                 `json:"namespace,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	Score     *float64               `json:"score,omitempty"`
+	CreatedAt string                 `json:"created_at"`
+}
+
+// MemoryEntryList is the response from listing or searching memory.
+type MemoryEntryList struct {
+	Entries []MemoryEntry `json:"entries"`
+}
+
+// StoreMemoryParams are parameters for storing a memory entry.
+type StoreMemoryParams struct {
+	Content   string                 `json:"content"`
+	Namespace string                 `json:"namespace,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// SearchMemoryParams are parameters for searching memory.
+type SearchMemoryParams struct {
+	Query     string  `json:"query"`
+	Limit     *int    `json:"limit,omitempty"`
+	Namespace string  `json:"namespace,omitempty"`
+	Threshold *float64 `json:"threshold,omitempty"`
+}
+
+// --- Runtime types ---
+
+// Runtime represents a managed runtime environment.
+type Runtime struct {
+	ID              string            `json:"id"`
+	AgentID         string            `json:"agent_id"`
+	Name            string            `json:"name"`
+	Image           string            `json:"image"`
+	Status          string            `json:"status"`
+	Env             map[string]string `json:"env,omitempty"`
+	CPU             string            `json:"cpu,omitempty"`
+	MemoryMB        *int              `json:"memory_mb,omitempty"`
+	Replicas        *int              `json:"replicas,omitempty"`
+	HealthCheckPath string            `json:"health_check_path,omitempty"`
+	URL             string            `json:"url,omitempty"`
+	CreatedAt       string            `json:"created_at"`
+	UpdatedAt       string            `json:"updated_at"`
+}
+
+// RuntimeList is the response from listing runtimes.
+type RuntimeList struct {
+	Runtimes []Runtime `json:"runtimes"`
+}
+
+// CreateRuntimeParams are parameters for creating a runtime.
+type CreateRuntimeParams struct {
+	AgentID         string            `json:"agent_id"`
+	Name            string            `json:"name"`
+	Image           string            `json:"image"`
+	Env             map[string]string `json:"env,omitempty"`
+	CPU             string            `json:"cpu,omitempty"`
+	MemoryMB        *int              `json:"memory_mb,omitempty"`
+	Replicas        *int              `json:"replicas,omitempty"`
+	HealthCheckPath string            `json:"health_check_path,omitempty"`
+}
+
+// UpdateRuntimeParams are parameters for updating a runtime.
+type UpdateRuntimeParams struct {
+	Image    *string           `json:"image,omitempty"`
+	Env      map[string]string `json:"env,omitempty"`
+	Replicas *int              `json:"replicas,omitempty"`
+	Status   *string           `json:"status,omitempty"`
+}
+
+// --- Discovery types ---
+
+// DirectoryListing represents an agent's discovery listing.
+type DirectoryListing struct {
+	AgentID     string   `json:"agent_id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Tags        []string `json:"tags,omitempty"`
+	Category    string   `json:"category,omitempty"`
+	WebsiteURL  string   `json:"website_url,omitempty"`
+	IsPublic    bool     `json:"is_public"`
+	CreatedAt   string   `json:"created_at"`
+	UpdatedAt   string   `json:"updated_at"`
+}
+
+// DirectorySearchResult is the response from searching the directory.
+type DirectorySearchResult struct {
+	Listings []DirectoryListing `json:"listings"`
+	Total    int                `json:"total"`
+}
+
+// PublishParams are parameters for publishing an agent to the directory.
+type PublishParams struct {
+	Description string   `json:"description"`
+	Tags        []string `json:"tags,omitempty"`
+	Category    string   `json:"category,omitempty"`
+	WebsiteURL  string   `json:"website_url,omitempty"`
+	IsPublic    *bool    `json:"is_public,omitempty"`
+}
+
+// UpdateListingParams are parameters for updating a directory listing.
+type UpdateListingParams struct {
+	Description *string  `json:"description,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	Category    *string  `json:"category,omitempty"`
+	IsPublic    *bool    `json:"is_public,omitempty"`
+}
