@@ -151,21 +151,25 @@ client, _ := oneclaw.New(
 ## Automations
 
 ```go
-// Create a cron-based automation
-auto, _ := client.Automations.Create(ctx, agentID, oneclaw.CreateAutomationParams{
-    Name:       "rotate-api-key",
-    Schedule:   "0 0 * * 0",
-    ActionType: "secret_rotate",
-    ActionConfig: map[string]interface{}{
-        "path": "api-keys/stripe",
+// Create a cron-based automation (workflow_spec required)
+auto, _ := client.Automations.Create(ctx, oneclaw.CreateAutomationParams{
+    Name:        "rotate-api-key",
+    AgentID:     agentID,
+    TriggerType: "cron",
+    CronExpr:    "0 0 * * 0",
+    Timezone:    "UTC",
+    WorkflowSpec: map[string]interface{}{
+        "steps": []map[string]interface{}{
+            {"type": "log", "action": "run_agent_task", "message": "Rotate weekly API keys"},
+        },
     },
 })
 
-// List automations
-list, _ := client.Automations.List(ctx, agentID)
+// List automations in the org
+list, _ := client.Automations.List(ctx)
 
 // Trigger manually
-_ = client.Automations.Trigger(ctx, agentID, auto.ID)
+_, _ = client.Automations.Trigger(ctx, auto.ID, nil)
 ```
 
 ## Agent Memory

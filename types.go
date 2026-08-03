@@ -855,16 +855,17 @@ type ExecutionEventList struct {
 
 // --- Automation types ---
 
-// Automation represents a scheduled automation for an agent.
+// Automation represents a scheduled / event / webhook automation.
 type Automation struct {
 	ID           string                 `json:"id"`
 	AgentID      string                 `json:"agent_id"`
 	Name         string                 `json:"name"`
-	Description  string                 `json:"description,omitempty"`
-	Schedule     string                 `json:"schedule"`
-	ActionType   string                 `json:"action_type"`
-	ActionConfig map[string]interface{} `json:"action_config"`
-	Enabled      bool                   `json:"enabled"`
+	TriggerType  string                 `json:"trigger_type"`
+	CronExpr     *string                `json:"cron_expr,omitempty"`
+	Timezone     string                 `json:"timezone"`
+	EventFilter  map[string]interface{} `json:"event_filter,omitempty"`
+	WorkflowSpec interface{}            `json:"workflow_spec"`
+	IsActive     bool                   `json:"is_active"`
 	LastRunAt    *string                `json:"last_run_at,omitempty"`
 	NextRunAt    *string                `json:"next_run_at,omitempty"`
 	CreatedAt    string                 `json:"created_at"`
@@ -877,31 +878,40 @@ type AutomationList struct {
 }
 
 // CreateAutomationParams are parameters for creating an automation.
+// WorkflowSpec is required and may be a []interface{} or map with "steps".
 type CreateAutomationParams struct {
 	Name         string                 `json:"name"`
-	Description  string                 `json:"description,omitempty"`
-	Schedule     string                 `json:"schedule"`
-	ActionType   string                 `json:"action_type"`
-	ActionConfig map[string]interface{} `json:"action_config"`
-	Enabled      *bool                  `json:"enabled,omitempty"`
+	AgentID      string                 `json:"agent_id"`
+	TriggerType  string                 `json:"trigger_type"`
+	CronExpr     string                 `json:"cron_expr,omitempty"`
+	Timezone     string                 `json:"timezone,omitempty"`
+	EventFilter  map[string]interface{} `json:"event_filter,omitempty"`
+	WorkflowSpec interface{}            `json:"workflow_spec"`
 }
 
 // UpdateAutomationParams are parameters for updating an automation.
 type UpdateAutomationParams struct {
 	Name         *string                `json:"name,omitempty"`
-	Schedule     *string                `json:"schedule,omitempty"`
-	ActionConfig map[string]interface{} `json:"action_config,omitempty"`
-	Enabled      *bool                  `json:"enabled,omitempty"`
+	CronExpr     *string                `json:"cron_expr,omitempty"`
+	Timezone     *string                `json:"timezone,omitempty"`
+	EventFilter  map[string]interface{} `json:"event_filter,omitempty"`
+	WorkflowSpec interface{}            `json:"workflow_spec,omitempty"`
+	IsActive     *bool                  `json:"is_active,omitempty"`
 }
 
 // AutomationRun represents a single execution of an automation.
 type AutomationRun struct {
-	ID           string  `json:"id"`
-	AutomationID string  `json:"automation_id"`
-	Status       string  `json:"status"`
-	StartedAt    string  `json:"started_at"`
-	CompletedAt  *string `json:"completed_at,omitempty"`
-	Error        *string `json:"error,omitempty"`
+	ID            string      `json:"id"`
+	AutomationID  string      `json:"automation_id"`
+	AgentID       string      `json:"agent_id"`
+	Status        string      `json:"status"`
+	StepResults   interface{} `json:"step_results,omitempty"`
+	Error         *string     `json:"error,omitempty"`
+	TriggerSource *string     `json:"trigger_source,omitempty"`
+	StartedAt     string      `json:"started_at"`
+	FinishedAt    *string     `json:"finished_at,omitempty"`
+	TokensUsed    int         `json:"tokens_used"`
+	CostCents     int         `json:"cost_cents"`
 }
 
 // AutomationRunList is the response from listing automation runs.
@@ -946,19 +956,27 @@ type SearchMemoryParams struct {
 
 // Runtime represents a managed runtime environment.
 type Runtime struct {
-	ID              string            `json:"id"`
-	AgentID         string            `json:"agent_id"`
-	Name            string            `json:"name"`
-	Image           string            `json:"image"`
-	Status          string            `json:"status"`
-	Env             map[string]string `json:"env,omitempty"`
-	CPU             string            `json:"cpu,omitempty"`
-	MemoryMB        *int              `json:"memory_mb,omitempty"`
-	Replicas        *int              `json:"replicas,omitempty"`
-	HealthCheckPath string            `json:"health_check_path,omitempty"`
-	URL             string            `json:"url,omitempty"`
-	CreatedAt       string            `json:"created_at"`
-	UpdatedAt       string            `json:"updated_at"`
+	ID                     string            `json:"id"`
+	AgentID                string            `json:"agent_id"`
+	Name                   string            `json:"name"`
+	Template               string            `json:"template,omitempty"`
+	Preset                 string            `json:"preset,omitempty"`
+	Provider               string            `json:"provider,omitempty"`
+	Status                 string            `json:"status"`
+	Image                  string            `json:"image,omitempty"`
+	EnvPublic              map[string]string `json:"env_public,omitempty"`
+	IdleTimeoutSecs        *int              `json:"idle_timeout_secs,omitempty"`
+	ExposeHTTP             bool              `json:"expose_http"`
+	Slug                   string            `json:"slug,omitempty"`
+	PublicURL              string            `json:"public_url,omitempty"`
+	HTTPPort               *int              `json:"http_port,omitempty"`
+	InboundAuth            string            `json:"inbound_auth,omitempty"`
+	ShellAccessEnabled     bool              `json:"shell_access_enabled"`
+	ShellAuthPolicy        string            `json:"shell_auth_policy,omitempty"`
+	ShellMaxSessionMinutes int               `json:"shell_max_session_minutes,omitempty"`
+	MonthlyHoursUsed       *float64          `json:"monthly_hours_used,omitempty"`
+	CreatedAt              string            `json:"created_at"`
+	UpdatedAt              string            `json:"updated_at"`
 }
 
 // RuntimeList is the response from listing runtimes.
@@ -968,22 +986,52 @@ type RuntimeList struct {
 
 // CreateRuntimeParams are parameters for creating a runtime.
 type CreateRuntimeParams struct {
-	AgentID         string            `json:"agent_id"`
-	Name            string            `json:"name"`
-	Image           string            `json:"image"`
-	Env             map[string]string `json:"env,omitempty"`
-	CPU             string            `json:"cpu,omitempty"`
-	MemoryMB        *int              `json:"memory_mb,omitempty"`
-	Replicas        *int              `json:"replicas,omitempty"`
-	HealthCheckPath string            `json:"health_check_path,omitempty"`
+	AgentID                string            `json:"agent_id"`
+	Name                   string            `json:"name"`
+	Template               string            `json:"template,omitempty"`
+	Preset                 string            `json:"preset,omitempty"`
+	Image                  string            `json:"image,omitempty"`
+	EnvPublic              map[string]string `json:"env_public,omitempty"`
+	IdleTimeoutSecs        *int              `json:"idle_timeout_secs,omitempty"`
+	ExposeHTTP             *bool             `json:"expose_http,omitempty"`
+	HTTPPort               *int              `json:"http_port,omitempty"`
+	Slug                   string            `json:"slug,omitempty"`
+	InboundAuth            string            `json:"inbound_auth,omitempty"`
+	ShellAccessEnabled     *bool             `json:"shell_access_enabled,omitempty"`
+	ShellAuthPolicy        string            `json:"shell_auth_policy,omitempty"`
+	ShellMaxSessionMinutes *int              `json:"shell_max_session_minutes,omitempty"`
 }
 
 // UpdateRuntimeParams are parameters for updating a runtime.
 type UpdateRuntimeParams struct {
-	Image    *string           `json:"image,omitempty"`
-	Env      map[string]string `json:"env,omitempty"`
-	Replicas *int              `json:"replicas,omitempty"`
-	Status   *string           `json:"status,omitempty"`
+	Name                   *string           `json:"name,omitempty"`
+	Image                  *string           `json:"image,omitempty"`
+	EnvPublic              map[string]string `json:"env_public,omitempty"`
+	IdleTimeoutSecs        *int              `json:"idle_timeout_secs,omitempty"`
+	ExposeHTTP             *bool             `json:"expose_http,omitempty"`
+	HTTPPort               *int              `json:"http_port,omitempty"`
+	Slug                   *string           `json:"slug,omitempty"`
+	InboundAuth            *string           `json:"inbound_auth,omitempty"`
+	ShellAccessEnabled     *bool             `json:"shell_access_enabled,omitempty"`
+	ShellAuthPolicy        *string           `json:"shell_auth_policy,omitempty"`
+	ShellMaxSessionMinutes *int              `json:"shell_max_session_minutes,omitempty"`
+}
+
+// ShellSessionParams are step-up credentials for an interactive shell session.
+type ShellSessionParams struct {
+	Password          string                 `json:"password,omitempty"`
+	TotpCode          string                 `json:"totp_code,omitempty"`
+	PasskeyCredential map[string]interface{} `json:"passkey_credential,omitempty"`
+	ReauthToken       string                 `json:"reauth_token,omitempty"`
+}
+
+// ShellSession is the response from creating a shell session.
+type ShellSession struct {
+	SessionToken      string `json:"session_token"`
+	WsURL             string `json:"ws_url"`
+	ExpiresIn         int64  `json:"expires_in"`
+	RuntimeID         string `json:"runtime_id"`
+	MaxSessionMinutes int    `json:"max_session_minutes"`
 }
 
 // --- Discovery types ---

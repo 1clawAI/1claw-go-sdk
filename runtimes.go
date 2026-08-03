@@ -55,7 +55,32 @@ func (s *RuntimesService) Delete(ctx context.Context, runtimeID string) error {
 	return s.client.doJSON(ctx, "DELETE", fmt.Sprintf("/v1/runtimes/%s", runtimeID), nil, nil)
 }
 
-// Restart restarts a runtime.
-func (s *RuntimesService) Restart(ctx context.Context, runtimeID string) error {
-	return s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/runtimes/%s/restart", runtimeID), nil, nil)
+// Start starts a stopped runtime.
+func (s *RuntimesService) Start(ctx context.Context, runtimeID string) (*Runtime, error) {
+	var result Runtime
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/runtimes/%s/start", runtimeID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// Stop stops a running runtime.
+func (s *RuntimesService) Stop(ctx context.Context, runtimeID string) (*Runtime, error) {
+	var result Runtime
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/runtimes/%s/stop", runtimeID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// CreateShellSession creates an interactive shell WebSocket session (human-only, step-up auth).
+func (s *RuntimesService) CreateShellSession(ctx context.Context, runtimeID string, params ShellSessionParams) (*ShellSession, error) {
+	var result ShellSession
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/runtimes/%s/shell/session", runtimeID), params, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
