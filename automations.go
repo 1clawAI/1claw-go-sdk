@@ -78,3 +78,33 @@ func (s *AutomationsService) Trigger(ctx context.Context, automationID string, i
 	}
 	return &result, nil
 }
+
+// GetRun retrieves a specific automation run.
+func (s *AutomationsService) GetRun(ctx context.Context, automationID, runID string) (*AutomationRun, error) {
+	var result AutomationRun
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/automations/%s/runs/%s", automationID, runID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// CancelRun cancels a running or awaiting_approval automation run (human-only).
+func (s *AutomationsService) CancelRun(ctx context.Context, automationID, runID string) (*AutomationRun, error) {
+	var result AutomationRun
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/automations/%s/runs/%s/cancel", automationID, runID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ListPresets returns available automation preset templates (public, no auth required).
+func (s *AutomationsService) ListPresets(ctx context.Context) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", "/v1/automations/presets", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

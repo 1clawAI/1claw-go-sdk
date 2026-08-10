@@ -219,6 +219,35 @@ listing, _ := client.Discovery.Publish(ctx, agentID, oneclaw.PublishParams{
 results, _ := client.Discovery.Search(ctx, "treasury management")
 ```
 
+## Channels
+
+```go
+// Register a Telegram channel for an agent
+ch, _ := client.Channels.Create(ctx, agentID, oneclaw.CreateChannelParams{
+    ChannelType: "telegram",
+    ChannelName: "Support Bot",
+})
+
+// Send a message
+msg, _ := client.Channels.SendMessage(ctx, agentID, ch.ID, "Hello!", nil)
+
+// List message history
+messages, _ := client.Channels.ListMessages(ctx, agentID, ch.ID)
+```
+
+## Webhooks
+
+```go
+// Register a webhook
+wh, _ := client.Webhooks.Create(ctx, oneclaw.CreateWebhookParams{
+    URL:    "https://example.com/hooks",
+    Events: []string{"agent.transaction.broadcast", "policy.created"},
+})
+
+// List webhooks
+hooks, _ := client.Webhooks.List(ctx)
+```
+
 ## Options
 
 | Option             | Description                                |
