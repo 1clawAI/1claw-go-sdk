@@ -46,8 +46,9 @@ type Client struct {
 	Memory      *MemoryService
 	Runtimes    *RuntimesService
 	Discovery   *DiscoveryService
-	Channels    *ChannelsService
-	Webhooks    *WebhooksService
+	Channels     *ChannelsService
+	Webhooks     *WebhooksService
+	OAuthConnect *OAuthConnectService
 }
 
 // Option configures the Client.
@@ -180,6 +181,7 @@ func New(opts ...Option) (*Client, error) {
 	client.Discovery = &DiscoveryService{client: client}
 	client.Channels = &ChannelsService{client: client}
 	client.Webhooks = &WebhooksService{client: client}
+	client.OAuthConnect = &OAuthConnectService{client: client}
 	return client, nil
 }
 

@@ -84,3 +84,8 @@ type BindingsService struct {
 type CardsService struct {
 	client *Client
 }
+
+// OAuthConnectService provides OAuth Connected Accounts operations.
+type OAuthConnectService struct {
+	client *Client
+}
