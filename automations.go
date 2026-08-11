@@ -108,3 +108,13 @@ func (s *AutomationsService) ListPresets(ctx context.Context) (map[string]interf
 	}
 	return result, nil
 }
+
+// RotateWebhookToken rotates the webhook trigger token for an automation (human-only).
+func (s *AutomationsService) RotateWebhookToken(ctx context.Context, automationID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/automations/%s/rotate-webhook-token", automationID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
