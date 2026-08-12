@@ -1,6 +1,10 @@
 # 1Claw Go SDK
 
-Go client library for the [1Claw](https://1claw.xyz) Vault API — HSM-backed secret management for AI agents and humans.
+Go client for the [1Claw](https://1claw.xyz) Vault API.
+
+Built for backend services and infrastructure code written in Go. You get typed structs for vaults, secrets, agents, policies, treasury, Intents API signing, execution bindings, and billing. Agent API keys exchange for JWTs automatically, same as the TypeScript and Python SDKs.
+
+Reach for this when your stack is already Go (microservices, operators, CI workers) and you want compile-time types instead of raw HTTP. For AI agent frameworks, use the MCP server or a language-specific integration package.
 
 ## Install
 
