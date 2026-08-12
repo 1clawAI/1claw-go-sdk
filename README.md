@@ -139,6 +139,15 @@ user, _ := client.Platform.UpsertUser(ctx, oneclaw.UpsertPlatformUserRequest{
 
 // Bootstrap resources from a template
 result, _ := client.Platform.BootstrapUser(ctx, connectionID)
+
+// Browse the public marketplace (no auth required)
+marketplace, _ := client.Platform.Marketplace(ctx)
+
+// Get app stats (connections, bootstraps, grants)
+stats, _ := client.Platform.GetAppStats(ctx, appID)
+
+// Rotate webhook signing secret (returns new secret once)
+secret, _ := client.Platform.RotateWebhookSecret(ctx, appID)
 ```
 
 ## DPoP (Proof-of-Possession)
@@ -150,7 +159,17 @@ client, _ := oneclaw.New(
 )
 ```
 
-> **Note:** For the full v0.42 API surface (non-EVM transaction signing, OAuth, email OTP, spend policies, deposit destinations, fiat ramps, and internal accounts), see the [TypeScript SDK](https://www.npmjs.com/package/@1claw/sdk) and the [OpenAPI spec](https://www.npmjs.com/package/@1claw/openapi-spec).
+## OAuth Token & Consent Management
+
+```go
+// Revoke an OAuth token (RFC 7009)
+resp, _ := client.OAuthConnect.RevokeToken(ctx, "eyJ...", "access_token")
+
+// Revoke consent for a platform app (deletes consent + revokes all tokens)
+_ = client.OAuthConnect.RevokeConsent(ctx, appID)
+```
+
+> **Note:** For the full v0.42 API surface (non-EVM transaction signing, email OTP, spend policies, deposit destinations, fiat ramps, and internal accounts), see the [TypeScript SDK](https://www.npmjs.com/package/@1claw/sdk) and the [OpenAPI spec](https://www.npmjs.com/package/@1claw/openapi-spec).
 
 ## Automations
 

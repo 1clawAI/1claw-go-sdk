@@ -110,3 +110,54 @@ func (s *PlatformService) ListConnectedApps(ctx context.Context) ([]map[string]i
 func (s *PlatformService) DisconnectApp(ctx context.Context, connectionID string) error {
 	return s.client.doJSON(ctx, "DELETE", fmt.Sprintf("/v1/platform/connected-apps/%s", connectionID), nil, nil)
 }
+
+// MarketplaceResponse is the response from browsing the platform marketplace.
+type MarketplaceResponse struct {
+	Apps []map[string]interface{} `json:"apps"`
+}
+
+// Marketplace browses the public platform marketplace (no auth required).
+func (s *PlatformService) Marketplace(ctx context.Context) (*MarketplaceResponse, error) {
+	var result MarketplaceResponse
+	err := s.client.doJSON(ctx, "GET", "/v1/platform/marketplace", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// PlatformAppStatsResponse contains aggregate statistics for a platform app.
+type PlatformAppStatsResponse struct {
+	TotalConnections  int `json:"total_connections"`
+	ActiveConnections int `json:"active_connections"`
+	ClaimedConnections int `json:"claimed_connections"`
+	TotalBootstraps   int `json:"total_bootstraps"`
+	TotalGrants       int `json:"total_grants"`
+}
+
+// GetAppStats returns aggregate statistics for a platform app.
+func (s *PlatformService) GetAppStats(ctx context.Context, appID string) (*PlatformAppStatsResponse, error) {
+	var result PlatformAppStatsResponse
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/apps/%s/stats", appID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// RotateWebhookSecretResponse is the response from rotating a platform app's
+// webhook signing secret.
+type RotateWebhookSecretResponse struct {
+	WebhookSecret string `json:"webhook_secret"`
+}
+
+// RotateWebhookSecret rotates a platform app's webhook signing secret.
+// The new secret is returned once and cannot be retrieved again.
+func (s *PlatformService) RotateWebhookSecret(ctx context.Context, appID string) (*RotateWebhookSecretResponse, error) {
+	var result RotateWebhookSecretResponse
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/apps/%s/rotate-webhook-secret", appID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

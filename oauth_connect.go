@@ -139,3 +139,34 @@ func (s *OAuthConnectService) ListOAuthAppCredentials(ctx context.Context, agent
 func (s *OAuthConnectService) DeleteOAuthAppCredentials(ctx context.Context, agentID, providerSlug string) error {
 	return s.client.doJSON(ctx, "DELETE", fmt.Sprintf("/v1/agents/%s/oauth/app-credentials/%s", agentID, providerSlug), nil, nil)
 }
+
+// OAuthRevokeRequest are parameters for revoking an OAuth token (RFC 7009).
+type OAuthRevokeRequest struct {
+	Token         string `json:"token"`
+	TokenTypeHint string `json:"token_type_hint,omitempty"`
+}
+
+// OAuthRevokeResponse is the response from revoking an OAuth token.
+type OAuthRevokeResponse struct {
+	Revoked bool `json:"revoked"`
+}
+
+// RevokeToken revokes an OAuth access or refresh token (RFC 7009).
+func (s *OAuthConnectService) RevokeToken(ctx context.Context, token string, tokenTypeHint string) (*OAuthRevokeResponse, error) {
+	req := OAuthRevokeRequest{Token: token}
+	if tokenTypeHint != "" {
+		req.TokenTypeHint = tokenTypeHint
+	}
+	var result OAuthRevokeResponse
+	err := s.client.doJSON(ctx, "POST", "/v1/oauth/revoke", req, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// RevokeConsent revokes OAuth consent for a platform app, deleting the consent
+// record and revoking all active tokens issued to the app for the calling user.
+func (s *OAuthConnectService) RevokeConsent(ctx context.Context, appID string) error {
+	return s.client.doJSON(ctx, "DELETE", fmt.Sprintf("/v1/oauth/consents/%s", appID), nil, nil)
+}
