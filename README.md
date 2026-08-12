@@ -60,7 +60,7 @@ client, _ := oneclaw.New(
 | `Auth`             | Login, signup, agent tokens, federated tokens            |
 | `Vaults`           | Create, list, get, delete vaults                         |
 | `Secrets`          | Store, retrieve, rotate, delete secrets                  |
-| `Agents`           | Manage agents, transactions, signing                     |
+| `Agents`           | Manage agents, transactions, signing, delegations        |
 | `APIKeys`          | Create, list, revoke API keys                            |
 | `Sharing`          | Share secrets via links or with users/agents              |
 | `Access`           | Policy-based access control                              |
@@ -82,6 +82,26 @@ client, _ := oneclaw.New(
 | `Memory`           | Persistent vector memory — store and search              |
 | `Runtimes`         | Managed runtime environments — deploy, scale, monitor    |
 | `Discovery`        | Agent directory — publish, search, manage listings       |
+
+## Agent Delegation
+
+```go
+// Create a delegation (human-only)
+delegation, _ := client.Agents.CreateDelegation(ctx, orchestratorID, oneclaw.CreateDelegationParams{
+    DelegateID:     subAgentID,
+    AllowedTools:   []string{"delegate_task"},
+    DelegationMode: "caller",
+})
+
+// List delegations
+list, _ := client.Agents.ListDelegations(ctx, agentID)
+
+// Get effective delegations (for runtime tool discovery)
+effective, _ := client.Agents.GetEffectiveDelegations(ctx, agentID)
+
+// Revoke a delegation
+_ = client.Agents.RevokeDelegation(ctx, agentID, delegationID)
+```
 
 ## Execution Intents (Bindings)
 
