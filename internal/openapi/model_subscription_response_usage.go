@@ -26,6 +26,7 @@ type SubscriptionResponseUsage struct {
 	Vaults *UsageMeter `json:"vaults,omitempty"`
 	TeamMembers *UsageMeter `json:"team_members,omitempty"`
 	IntentTransactions *UsageMeter `json:"intent_transactions,omitempty"`
+	Wallets *UsageMeter `json:"wallets,omitempty"`
 	Shares *UsageMeter `json:"shares,omitempty"`
 }
 
@@ -238,6 +239,38 @@ func (o *SubscriptionResponseUsage) SetIntentTransactions(v UsageMeter) {
 	o.IntentTransactions = &v
 }
 
+// GetWallets returns the Wallets field value if set, zero value otherwise.
+func (o *SubscriptionResponseUsage) GetWallets() UsageMeter {
+	if o == nil || IsNil(o.Wallets) {
+		var ret UsageMeter
+		return ret
+	}
+	return *o.Wallets
+}
+
+// GetWalletsOk returns a tuple with the Wallets field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SubscriptionResponseUsage) GetWalletsOk() (*UsageMeter, bool) {
+	if o == nil || IsNil(o.Wallets) {
+		return nil, false
+	}
+	return o.Wallets, true
+}
+
+// HasWallets returns a boolean if a field has been set.
+func (o *SubscriptionResponseUsage) HasWallets() bool {
+	if o != nil && !IsNil(o.Wallets) {
+		return true
+	}
+
+	return false
+}
+
+// SetWallets gets a reference to the given UsageMeter and assigns it to the Wallets field.
+func (o *SubscriptionResponseUsage) SetWallets(v UsageMeter) {
+	o.Wallets = &v
+}
+
 // GetShares returns the Shares field value if set, zero value otherwise.
 func (o *SubscriptionResponseUsage) GetShares() UsageMeter {
 	if o == nil || IsNil(o.Shares) {
@@ -297,6 +330,9 @@ func (o SubscriptionResponseUsage) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.IntentTransactions) {
 		toSerialize["intent_transactions"] = o.IntentTransactions
+	}
+	if !IsNil(o.Wallets) {
+		toSerialize["wallets"] = o.Wallets
 	}
 	if !IsNil(o.Shares) {
 		toSerialize["shares"] = o.Shares
