@@ -40,3 +40,11 @@ func (s *SigningKeysService) Export(ctx context.Context, agentID, chain, passwor
 	err := s.client.doJSONWithHeaders(ctx, "POST", fmt.Sprintf("/v1/agents/%s/signing-keys/%s/export", agentID, url.PathEscape(chain)), nil, &result, headers)
 	return &result, err
 }
+
+// ImportKey imports an existing private key as a signing key for the given chain.
+// Requires re-authentication via the user's account password.
+func (s *SigningKeysService) ImportKey(ctx context.Context, agentID, chain string, req ImportKeyRequest, password string) (*SigningKey, error) {
+	var resp SigningKey
+	err := s.client.doJSONWithHeaders(ctx, "POST", fmt.Sprintf("/v1/agents/%s/signing-keys/%s/import", agentID, url.PathEscape(chain)), req, &resp, map[string]string{"X-Auth-Confirm": password})
+	return &resp, err
+}

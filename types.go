@@ -1071,3 +1071,158 @@ type UpdateListingParams struct {
 	Category    *string  `json:"category,omitempty"`
 	IsPublic    *bool    `json:"is_public,omitempty"`
 }
+
+// --- Key Import types ---
+
+// ImportKeyRequest are parameters for importing a private key.
+type ImportKeyRequest struct {
+	PrivateKey string `json:"private_key"`
+	Format     string `json:"format,omitempty"` // hex, base64, wif
+}
+
+// --- Cedar Policy types ---
+
+// CreateCedarPolicyRequest are parameters for creating a Cedar policy.
+type CreateCedarPolicyRequest struct {
+	PolicyText  string `json:"policy_text"`
+	Description string `json:"description,omitempty"`
+}
+
+// CedarPolicyResponse represents a Cedar policy.
+type CedarPolicyResponse struct {
+	ID          string `json:"id"`
+	PolicyText  string `json:"policy_text"`
+	Description string `json:"description,omitempty"`
+	CreatedAt   string `json:"created_at"`
+	CreatedBy   string `json:"created_by"`
+}
+
+// CedarPolicyListResponse is the response from listing Cedar policies.
+type CedarPolicyListResponse struct {
+	Policies []CedarPolicyResponse `json:"policies"`
+}
+
+// CedarPolicyTestRequest are parameters for testing a Cedar policy.
+type CedarPolicyTestRequest struct {
+	Principal string                 `json:"principal"`
+	Action    string                 `json:"action"`
+	Resource  string                 `json:"resource"`
+	Context   map[string]interface{} `json:"context,omitempty"`
+}
+
+// CedarPolicyTestResponse is the result of a Cedar policy test.
+type CedarPolicyTestResponse struct {
+	Decision string   `json:"decision"`
+	Reasons  []string `json:"reasons"`
+}
+
+// --- OPA Policy types ---
+
+// CreateOpaPolicyRequest are parameters for creating an OPA policy.
+type CreateOpaPolicyRequest struct {
+	RegoModule  string                 `json:"rego_module"`
+	Description string                 `json:"description,omitempty"`
+	Data        map[string]interface{} `json:"data,omitempty"`
+}
+
+// OpaPolicyResponse represents an OPA policy.
+type OpaPolicyResponse struct {
+	ID          string                 `json:"id"`
+	RegoModule  string                 `json:"rego_module"`
+	Description string                 `json:"description,omitempty"`
+	Data        map[string]interface{} `json:"data,omitempty"`
+	CreatedAt   string                 `json:"created_at"`
+	CreatedBy   string                 `json:"created_by"`
+}
+
+// OpaPolicyListResponse is the response from listing OPA policies.
+type OpaPolicyListResponse struct {
+	Policies []OpaPolicyResponse `json:"policies"`
+}
+
+// OpaPolicyTestRequest are parameters for testing an OPA policy.
+type OpaPolicyTestRequest struct {
+	Input map[string]interface{} `json:"input"`
+	Data  map[string]interface{} `json:"data,omitempty"`
+}
+
+// OpaPolicyTestResponse is the result of an OPA policy test.
+type OpaPolicyTestResponse struct {
+	Result   map[string]interface{} `json:"result"`
+	Decision string                 `json:"decision"`
+}
+
+// --- Sub-Organization types ---
+
+// CreateSubOrgRequest are parameters for creating a sub-organization.
+type CreateSubOrgRequest struct {
+	Name         string `json:"name"`
+	Description  string `json:"description,omitempty"`
+	BillingModel string `json:"billing_model,omitempty"`
+}
+
+// SubOrgResponse represents a sub-organization.
+type SubOrgResponse struct {
+	ID           string `json:"id"`
+	ParentOrgID  string `json:"parent_org_id"`
+	Name         string `json:"name"`
+	Description  string `json:"description,omitempty"`
+	BillingModel string `json:"billing_model"`
+	Status       string `json:"status"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// SubOrgListResponse is the response from listing sub-organizations.
+type SubOrgListResponse struct {
+	SubOrgs []SubOrgResponse `json:"sub_orgs"`
+}
+
+// SubOrgPermissionRequest are parameters for granting a sub-org permission.
+type SubOrgPermissionRequest struct {
+	Permission  string   `json:"permission"`
+	ResourceIDs []string `json:"resource_ids,omitempty"`
+}
+
+// SubOrgAddUserRequest are parameters for adding a user to a sub-org.
+type SubOrgAddUserRequest struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role,omitempty"`
+}
+
+// --- Portfolio types ---
+
+// PortfolioResponse is the aggregated portfolio view.
+type PortfolioResponse struct {
+	Wallets          []PortfolioWalletEntry `json:"wallets"`
+	TotalUSDEstimate string                 `json:"total_usd_estimate,omitempty"`
+}
+
+// PortfolioWalletEntry represents a single wallet in the portfolio.
+type PortfolioWalletEntry struct {
+	WalletType       string                  `json:"wallet_type"`
+	Chain            string                  `json:"chain"`
+	Address          string                  `json:"address"`
+	NativeBalance    string                  `json:"native_balance"`
+	NativeBalanceUSD string                  `json:"native_balance_usd,omitempty"`
+	Tokens           []PortfolioTokenBalance `json:"tokens,omitempty"`
+}
+
+// PortfolioTokenBalance represents a token balance within a portfolio wallet.
+type PortfolioTokenBalance struct {
+	ContractAddress string `json:"contract_address"`
+	Symbol          string `json:"symbol"`
+	Name            string `json:"name,omitempty"`
+	Balance         string `json:"balance"`
+	BalanceUSD      string `json:"balance_usd,omitempty"`
+	Decimals        int    `json:"decimals"`
+}
+
+// --- Smart Account Import types ---
+
+// ImportSmartAccountRequest are parameters for importing an existing smart account.
+type ImportSmartAccountRequest struct {
+	Chain       string `json:"chain"`
+	ChainID     int    `json:"chain_id"`
+	SafeAddress string `json:"safe_address"`
+	Verify      *bool  `json:"verify,omitempty"`
+}

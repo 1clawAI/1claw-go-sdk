@@ -353,6 +353,16 @@ func (s *TreasuryService) SwapFromWallet(ctx context.Context, chain, password st
 	return &result, nil
 }
 
+// ImportWallet imports an existing private key as a treasury wallet for the given chain.
+// Requires re-authentication via the account password.
+func (s *TreasuryService) ImportWallet(ctx context.Context, chain string, req ImportKeyRequest, password string) (map[string]interface{}, error) {
+	var resp map[string]interface{}
+	err := s.client.doJSONWithHeaders(ctx, "POST", "/v1/treasury/wallets/"+chain+"/import", req, &resp, map[string]string{
+		"X-Auth-Confirm": password,
+	})
+	return resp, err
+}
+
 // ── Treasury Proposals (multisig propose/sign/execute) ────────────
 
 // TreasuryProposal represents a multisig transaction proposal.

@@ -167,3 +167,10 @@ func (s *AgentsService) GetEffectiveDelegations(ctx context.Context, agentID str
 	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/agents/%s/delegations/effective", agentID), nil, &resp)
 	return &resp, err
 }
+
+// ImportSmartAccount imports an existing Safe smart account for an agent.
+func (s *AgentsService) ImportSmartAccount(ctx context.Context, agentID string, req ImportSmartAccountRequest) (map[string]interface{}, error) {
+	var resp map[string]interface{}
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/agents/%s/smart-accounts/import", agentID), req, &resp)
+	return resp, err
+}
