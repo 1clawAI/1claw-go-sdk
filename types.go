@@ -1084,17 +1084,21 @@ type ImportKeyRequest struct {
 
 // CreateCedarPolicyRequest are parameters for creating a Cedar policy.
 type CreateCedarPolicyRequest struct {
-	PolicyText  string `json:"policy_text"`
-	Description string `json:"description,omitempty"`
+	Name      string `json:"name"`
+	CedarText string `json:"cedar_text"`
 }
 
 // CedarPolicyResponse represents a Cedar policy.
 type CedarPolicyResponse struct {
-	ID          string `json:"id"`
-	PolicyText  string `json:"policy_text"`
-	Description string `json:"description,omitempty"`
-	CreatedAt   string `json:"created_at"`
-	CreatedBy   string `json:"created_by"`
+	ID                string `json:"id"`
+	OrgID             string `json:"org_id"`
+	Name              string `json:"name"`
+	CedarText         string `json:"cedar_text"`
+	IsActive          bool   `json:"is_active"`
+	EnforcementStatus string `json:"enforcement_status"`
+	CreatedBy         string `json:"created_by"`
+	CreatedAt         string `json:"created_at"`
+	UpdatedAt         string `json:"updated_at"`
 }
 
 // CedarPolicyListResponse is the response from listing Cedar policies.
@@ -1104,35 +1108,46 @@ type CedarPolicyListResponse struct {
 
 // CedarPolicyTestRequest are parameters for testing a Cedar policy.
 type CedarPolicyTestRequest struct {
-	Principal string                 `json:"principal"`
-	Action    string                 `json:"action"`
-	Resource  string                 `json:"resource"`
-	Context   map[string]interface{} `json:"context,omitempty"`
+	CedarText       string                 `json:"cedar_text,omitempty"`
+	PrincipalType   string                 `json:"principal_type"`
+	PrincipalID     string                 `json:"principal_id"`
+	Action          string                 `json:"action"`
+	ResourcePath    string                 `json:"resource_path"`
+	VaultID         string                 `json:"vault_id"`
+	Context         map[string]interface{} `json:"context,omitempty"`
 }
 
 // CedarPolicyTestResponse is the result of a Cedar policy test.
 type CedarPolicyTestResponse struct {
-	Decision string   `json:"decision"`
-	Reasons  []string `json:"reasons"`
+	Decision          string `json:"decision"`
+	Backend           string `json:"backend"`
+	EnforcementStatus string `json:"enforcement_status"`
+	Note              string `json:"note"`
 }
 
 // --- OPA Policy types ---
 
 // CreateOpaPolicyRequest are parameters for creating an OPA policy.
 type CreateOpaPolicyRequest struct {
-	RegoModule  string                 `json:"rego_module"`
-	Description string                 `json:"description,omitempty"`
-	Data        map[string]interface{} `json:"data,omitempty"`
+	Name              string `json:"name"`
+	RegoSource        string `json:"rego_source,omitempty"`
+	WasmBundleBase64  string `json:"wasm_bundle_base64,omitempty"`
+	Entrypoint        string `json:"entrypoint,omitempty"`
 }
 
 // OpaPolicyResponse represents an OPA policy.
 type OpaPolicyResponse struct {
-	ID          string                 `json:"id"`
-	RegoModule  string                 `json:"rego_module"`
-	Description string                 `json:"description,omitempty"`
-	Data        map[string]interface{} `json:"data,omitempty"`
-	CreatedAt   string                 `json:"created_at"`
-	CreatedBy   string                 `json:"created_by"`
+	ID                string `json:"id"`
+	OrgID             string `json:"org_id"`
+	Name              string `json:"name"`
+	RegoSource        string `json:"rego_source,omitempty"`
+	HasWasmBundle     bool   `json:"has_wasm_bundle"`
+	Entrypoint        string `json:"entrypoint"`
+	IsActive          bool   `json:"is_active"`
+	EnforcementStatus string `json:"enforcement_status"`
+	CreatedBy         string `json:"created_by"`
+	CreatedAt         string `json:"created_at"`
+	UpdatedAt         string `json:"updated_at"`
 }
 
 // OpaPolicyListResponse is the response from listing OPA policies.
@@ -1142,14 +1157,20 @@ type OpaPolicyListResponse struct {
 
 // OpaPolicyTestRequest are parameters for testing an OPA policy.
 type OpaPolicyTestRequest struct {
-	Input map[string]interface{} `json:"input"`
-	Data  map[string]interface{} `json:"data,omitempty"`
+	PrincipalType string                 `json:"principal_type"`
+	PrincipalID   string                 `json:"principal_id"`
+	Action        string                 `json:"action"`
+	ResourcePath  string                 `json:"resource_path"`
+	VaultID       string                 `json:"vault_id"`
+	Context       map[string]interface{} `json:"context,omitempty"`
 }
 
 // OpaPolicyTestResponse is the result of an OPA policy test.
 type OpaPolicyTestResponse struct {
-	Result   map[string]interface{} `json:"result"`
-	Decision string                 `json:"decision"`
+	Decision          string `json:"decision"`
+	Backend           string `json:"backend"`
+	EnforcementStatus string `json:"enforcement_status"`
+	Note              string `json:"note"`
 }
 
 // --- Sub-Organization types ---
@@ -1225,4 +1246,146 @@ type ImportSmartAccountRequest struct {
 	ChainID     int    `json:"chain_id"`
 	SafeAddress string `json:"safe_address"`
 	Verify      *bool  `json:"verify,omitempty"`
+}
+
+// --- Policy Backend types ---
+
+type PolicyBackendSettings struct {
+	Backend         string   `json:"backend"`
+	Mode            string   `json:"mode"`
+	Scope           []string `json:"scope"`
+	BreakerBehavior string   `json:"breaker_behavior"`
+	PolicyVersion   int64    `json:"policy_version"`
+}
+
+type UpdatePolicyBackendSettingsRequest struct {
+	Backend         *string  `json:"backend,omitempty"`
+	Mode            *string  `json:"mode,omitempty"`
+	Scope           []string `json:"scope,omitempty"`
+	BreakerBehavior *string  `json:"breaker_behavior,omitempty"`
+}
+
+type PolicyShadowReport struct {
+	TotalEvaluated   uint64              `json:"total_evaluated"`
+	TotalDivergences uint64              `json:"total_divergences"`
+	TotalErrors      uint64              `json:"total_errors"`
+	ConcordanceRate  float64             `json:"concordance_rate"`
+	SampleEvents     []PolicyShadowEvent `json:"sample_events"`
+	PeriodStart      string              `json:"period_start"`
+	PeriodEnd        string              `json:"period_end"`
+}
+
+type PolicyShadowEvent struct {
+	ID               string  `json:"id"`
+	OrgID            string  `json:"org_id"`
+	Backend          string  `json:"backend"`
+	Action           string  `json:"action"`
+	BuiltinDecision  string  `json:"builtin_decision"`
+	BackendDecision  string  `json:"backend_decision"`
+	Divergent        bool    `json:"divergent"`
+	Sampled          bool    `json:"sampled"`
+	EvalDurationMs   *int32  `json:"eval_duration_ms,omitempty"`
+	ErrorText        *string `json:"error_text,omitempty"`
+	CallerID         *string `json:"caller_id,omitempty"`
+	ResourcePath     *string `json:"resource_path,omitempty"`
+	CreatedAt        string  `json:"created_at"`
+}
+
+// --- Contract ABI types ---
+
+type CreateContractAbiRequest struct {
+	Chain           string                   `json:"chain"`
+	ContractAddress string                   `json:"contract_address"`
+	AbiJSON         []map[string]interface{} `json:"abi_json"`
+	Name            string                   `json:"name,omitempty"`
+	Description     string                   `json:"description,omitempty"`
+	TokenDecimals   *int32                   `json:"token_decimals,omitempty"`
+}
+
+type ContractAbiResponse struct {
+	ID              string                   `json:"id"`
+	OrgID           string                   `json:"org_id"`
+	Chain           string                   `json:"chain"`
+	ContractAddress string                   `json:"contract_address"`
+	AbiJSON         []map[string]interface{} `json:"abi_json"`
+	Name            string                   `json:"name,omitempty"`
+	Description     string                   `json:"description,omitempty"`
+	TokenDecimals   *int32                   `json:"token_decimals,omitempty"`
+	CreatedBy       string                   `json:"created_by"`
+	CreatedAt       string                   `json:"created_at"`
+	UpdatedAt       string                   `json:"updated_at"`
+}
+
+type ContractAbiListResponse struct {
+	Abis []ContractAbiResponse `json:"abis"`
+}
+
+// --- Pending Approval types ---
+
+type SubmitPendingApprovalRequest struct {
+	PolicyID       string                 `json:"policy_id"`
+	Action         string                 `json:"action"`
+	ActionPayload  map[string]interface{} `json:"action_payload"`
+}
+
+type SubmitPendingApprovalResponse struct {
+	PendingApprovalID string `json:"pending_approval_id"`
+	RequiredApprovals int    `json:"required_approvals"`
+	CurrentApprovals  int    `json:"current_approvals"`
+	ExpiresAt         string `json:"expires_at"`
+	Status            string `json:"status"`
+	Message           string `json:"message"`
+}
+
+type ListPendingApprovalsParams struct {
+	Status  string
+	AgentID string
+	Limit   int
+	Offset  int
+}
+
+type ApprovePendingApprovalRequest struct {
+	Decision    string `json:"decision"`
+	PayloadHash string `json:"payload_hash"`
+	Reason      string `json:"reason,omitempty"`
+}
+
+type PendingApprovalResponse struct {
+	ID                string                         `json:"id"`
+	OrgID             string                         `json:"org_id"`
+	PolicyID          string                         `json:"policy_id"`
+	Action            string                         `json:"action"`
+	ActionPayload     map[string]interface{}         `json:"action_payload"`
+	PayloadHash       string                         `json:"payload_hash"`
+	SubmittedBy       string                         `json:"submitted_by"`
+	SubmittedByType   string                         `json:"submitted_by_type"`
+	Status            string                         `json:"status"`
+	RequiredApprovals int                            `json:"required_approvals"`
+	CurrentApprovals  int                            `json:"current_approvals"`
+	ExpiresAt         string                         `json:"expires_at"`
+	ExecutedAt        *string                        `json:"executed_at,omitempty"`
+	CreatedAt         string                         `json:"created_at"`
+	UpdatedAt         string                         `json:"updated_at"`
+	Signatures        []ApprovalSignatureResponse    `json:"signatures,omitempty"`
+}
+
+type ApprovalSignatureResponse struct {
+	ID           string  `json:"id"`
+	ApproverID   string  `json:"approver_id"`
+	ApproverType string  `json:"approver_type"`
+	Decision     string  `json:"decision"`
+	Reason       *string `json:"reason,omitempty"`
+	CreatedAt    string  `json:"created_at"`
+}
+
+type PendingApprovalListResponse struct {
+	PendingApprovals []PendingApprovalResponse `json:"pending_approvals"`
+	Total            int64                     `json:"total"`
+}
+
+type ExecutePendingApprovalResponse struct {
+	PendingApprovalID string                 `json:"pending_approval_id"`
+	Status            string                 `json:"status"`
+	ExecutedAt        string                 `json:"executed_at"`
+	Result            map[string]interface{} `json:"result"`
 }

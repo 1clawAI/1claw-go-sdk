@@ -51,8 +51,11 @@ type Client struct {
 	OAuthConnect  *OAuthConnectService
 	CedarPolicies *CedarPoliciesService
 	OpaPolicies   *OpaPoliciesService
-	SubOrgs       *SubOrgsService
-	Portfolio     *PortfolioService
+	SubOrgs           *SubOrgsService
+	Portfolio         *PortfolioService
+	PolicyBackend     *PolicyBackendService
+	ContractAbis      *ContractAbisService
+	PendingApprovals  *PendingApprovalsService
 }
 
 // Option configures the Client.
@@ -190,6 +193,9 @@ func New(opts ...Option) (*Client, error) {
 	client.OpaPolicies = &OpaPoliciesService{client: client}
 	client.SubOrgs = &SubOrgsService{client: client}
 	client.Portfolio = &PortfolioService{client: client}
+	client.PolicyBackend = &PolicyBackendService{client: client}
+	client.ContractAbis = &ContractAbisService{client: client}
+	client.PendingApprovals = &PendingApprovalsService{client: client}
 	return client, nil
 }
 
