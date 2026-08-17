@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -244,6 +245,9 @@ func (c *Client) doJSONWithHeaders(ctx context.Context, method, path string, bod
 	req.Header.Set("Content-Type", "application/json")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if runtimeID := os.Getenv("ONECLAW_RUNTIME_ID"); runtimeID != "" {
+		req.Header.Set("X-1Claw-Runtime-Id", runtimeID)
 	}
 	for k, v := range headers {
 		req.Header.Set(k, v)

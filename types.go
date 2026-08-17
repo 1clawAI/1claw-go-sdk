@@ -260,6 +260,7 @@ type CreatePolicyParams struct {
 	Permissions       []string
 	Conditions        map[string]interface{}
 	ExpiresAt         *time.Time
+	TxConditions      map[string]interface{} `json:"tx_conditions,omitempty"`
 }
 
 // UpdatePolicyParams are parameters for updating a policy.
@@ -268,6 +269,7 @@ type UpdatePolicyParams struct {
 	Permissions       []string
 	Conditions        map[string]interface{}
 	ExpiresAt         *time.Time
+	TxConditions      map[string]interface{} `json:"tx_conditions,omitempty"`
 }
 
 // --- Sharing types ---
@@ -1300,6 +1302,7 @@ type CreateContractAbiRequest struct {
 	Name            string                   `json:"name,omitempty"`
 	Description     string                   `json:"description,omitempty"`
 	TokenDecimals   *int32                   `json:"token_decimals,omitempty"`
+	InterfaceKind   string                   `json:"interface_kind,omitempty"`
 }
 
 type ContractAbiResponse struct {
@@ -1311,6 +1314,7 @@ type ContractAbiResponse struct {
 	Name            string                   `json:"name,omitempty"`
 	Description     string                   `json:"description,omitempty"`
 	TokenDecimals   *int32                   `json:"token_decimals,omitempty"`
+	InterfaceKind   string                   `json:"interface_kind,omitempty"`
 	CreatedBy       string                   `json:"created_by"`
 	CreatedAt       string                   `json:"created_at"`
 	UpdatedAt       string                   `json:"updated_at"`
