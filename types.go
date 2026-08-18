@@ -1393,3 +1393,67 @@ type ExecutePendingApprovalResponse struct {
 	ExecutedAt        string                 `json:"executed_at"`
 	Result            map[string]interface{} `json:"result"`
 }
+
+// ── Env Vars ─────────────────────────────────────────────────────
+
+type CreateEnvVarRequest struct {
+	Key          string   `json:"key"`
+	Value        string   `json:"value"`
+	Environments []string `json:"environments,omitempty"`
+	GitBranch    string   `json:"git_branch,omitempty"`
+	Sensitive    bool     `json:"sensitive"`
+	Comment      string   `json:"comment,omitempty"`
+}
+
+type UpdateEnvVarRequest struct {
+	Value        *string  `json:"value,omitempty"`
+	Environments []string `json:"environments,omitempty"`
+	Sensitive    *bool    `json:"sensitive,omitempty"`
+	Comment      *string  `json:"comment,omitempty"`
+}
+
+type EnvVarResponse struct {
+	ID           string   `json:"id"`
+	Key          string   `json:"key"`
+	Environments []string `json:"environments"`
+	GitBranch    *string  `json:"git_branch,omitempty"`
+	Sensitive    bool     `json:"sensitive"`
+	Comment      *string  `json:"comment,omitempty"`
+	Value        *string  `json:"value,omitempty"`
+	Version      int      `json:"version"`
+	CreatedBy    string   `json:"created_by"`
+	CreatedAt    string   `json:"created_at"`
+	UpdatedAt    string   `json:"updated_at"`
+}
+
+type EnvVarListResponse struct {
+	EnvVars []EnvVarResponse `json:"env_vars"`
+}
+
+type ResolveEnvVarsResponse struct {
+	Vars        map[string]string `json:"vars"`
+	Sources     map[string]string `json:"sources"`
+	Environment string            `json:"environment"`
+	GitBranch   *string           `json:"git_branch,omitempty"`
+	ResolvedAt  string            `json:"resolved_at"`
+}
+
+type EnvironmentResponse struct {
+	ID          string  `json:"id"`
+	Slug        string  `json:"slug"`
+	Description *string `json:"description,omitempty"`
+	IsBuiltin   bool    `json:"is_builtin"`
+	CopiedFrom  *string `json:"copied_from,omitempty"`
+	IsDetached  bool    `json:"is_detached"`
+	CreatedAt   string  `json:"created_at"`
+}
+
+type EnvironmentListResponse struct {
+	Environments []EnvironmentResponse `json:"environments"`
+}
+
+type CreateEnvironmentRequest struct {
+	Slug        string `json:"slug"`
+	Description string `json:"description,omitempty"`
+	CopyFrom    string `json:"copy_from,omitempty"`
+}

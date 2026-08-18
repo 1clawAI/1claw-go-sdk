@@ -57,6 +57,7 @@ type Client struct {
 	PolicyBackend     *PolicyBackendService
 	ContractAbis      *ContractAbisService
 	PendingApprovals  *PendingApprovalsService
+	EnvVars           *EnvVarsService
 }
 
 // Option configures the Client.
@@ -197,6 +198,7 @@ func New(opts ...Option) (*Client, error) {
 	client.PolicyBackend = &PolicyBackendService{client: client}
 	client.ContractAbis = &ContractAbisService{client: client}
 	client.PendingApprovals = &PendingApprovalsService{client: client}
+	client.EnvVars = &EnvVarsService{client: client}
 	return client, nil
 }
 
