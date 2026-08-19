@@ -634,6 +634,8 @@ type SignIntentParams struct {
 	TokenDecimals     *int32                 `json:"token_decimals,omitempty"`
 	TTL               *int64                 `json:"ttl,omitempty"`
 	XrplTxJSON        map[string]interface{} `json:"xrpl_tx_json,omitempty"`
+	RawTransaction    string                 `json:"raw_transaction,omitempty"`
+	TronTransaction   map[string]interface{} `json:"tron_transaction,omitempty"`
 }
 
 // SignIntentResult is the response from the unified sign endpoint.
