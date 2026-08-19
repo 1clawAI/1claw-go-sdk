@@ -245,6 +245,7 @@ type Policy struct {
 	CreatedBy         string
 	CreatedByType     string
 	CreatedAt         time.Time
+	PolicySchemaVersion int `json:"policy_schema_version,omitempty"`
 }
 
 // PolicyList is the response from listing policies.
@@ -261,6 +262,8 @@ type CreatePolicyParams struct {
 	Conditions        map[string]interface{}
 	ExpiresAt         *time.Time
 	TxConditions      map[string]interface{} `json:"tx_conditions,omitempty"`
+	ApprovalID        *string                `json:"approval_id,omitempty"`
+	PolicySchemaVersion *int                 `json:"policy_schema_version,omitempty"`
 }
 
 // UpdatePolicyParams are parameters for updating a policy.
@@ -270,6 +273,7 @@ type UpdatePolicyParams struct {
 	Conditions        map[string]interface{}
 	ExpiresAt         *time.Time
 	TxConditions      map[string]interface{} `json:"tx_conditions,omitempty"`
+	ApprovalID        *string                `json:"approval_id,omitempty"`
 }
 
 // --- Sharing types ---
