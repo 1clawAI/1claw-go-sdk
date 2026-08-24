@@ -291,6 +291,13 @@ func (s *TreasuryService) GetWalletBalance(ctx context.Context, chain string) (*
 	return &result, nil
 }
 
+// GetWalletAuthPolicy returns the effective HFA policy for embedded wallet clients.
+func (s *TreasuryService) GetWalletAuthPolicy(ctx context.Context) (*HumanFactorAuthPolicy, error) {
+	var resp HumanFactorAuthPolicy
+	err := s.client.doJSON(ctx, "GET", "/v1/treasury/wallets/auth-policy", nil, &resp)
+	return &resp, err
+}
+
 // SendFromWalletParams configures a send transaction from a treasury wallet.
 type SendFromWalletParams struct {
 	To            string `json:"to"`

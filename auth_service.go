@@ -55,3 +55,23 @@ func (s *AuthService) Me(ctx context.Context) (*UserProfile, error) {
 	}
 	return userProfileFromAPI(resp), nil
 }
+
+// HumanFactorAuthPolicy is the resolved HFA policy for treasury actions.
+type HumanFactorAuthPolicy struct {
+	Policy map[string]interface{} `json:"policy"`
+	Source string                 `json:"source"`
+}
+
+// GetHumanFactorAuth returns the effective human factor auth policy.
+func (s *AuthService) GetHumanFactorAuth(ctx context.Context) (*HumanFactorAuthPolicy, error) {
+	var resp HumanFactorAuthPolicy
+	err := s.client.doJSON(ctx, "GET", "/v1/auth/human-factor-auth", nil, &resp)
+	return &resp, err
+}
+
+// SetHumanFactorAuth sets the user-level human factor auth policy.
+func (s *AuthService) SetHumanFactorAuth(ctx context.Context, policy map[string]interface{}) (*HumanFactorAuthPolicy, error) {
+	var resp HumanFactorAuthPolicy
+	err := s.client.doJSON(ctx, "PUT", "/v1/auth/human-factor-auth", map[string]interface{}{"policy": policy}, &resp)
+	return &resp, err
+}

@@ -220,6 +220,47 @@ func (c *Client) doJSON(ctx context.Context, method, path string, body any, resu
 	return c.doJSONWithHeaders(ctx, method, path, body, result, nil)
 }
 
+// doJSONPublic performs unauthenticated JSON HTTP requests (public endpoints).
+func (c *Client) doJSONPublic(ctx context.Context, method, path string, body any, result any) error {
+	baseURL := "https://api.1claw.xyz"
+	if len(c.api.GetConfig().Servers) > 0 {
+		baseURL = c.api.GetConfig().Servers[0].URL
+	}
+
+	var reqBody io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("marshal request: %w", err)
+		}
+		reqBody = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, reqBody)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.api.GetConfig().HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 50*1024*1024))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("API error %d: %s", resp.StatusCode, string(data))
+	}
+	if result != nil && len(data) > 0 {
+		return json.Unmarshal(data, result)
+	}
+	return nil
+}
+
 // doJSONWithHeaders is like doJSON but allows setting additional request headers.
 func (c *Client) doJSONWithHeaders(ctx context.Context, method, path string, body any, result any, headers map[string]string) error {
 	if err := c.ensureToken(ctx); err != nil {

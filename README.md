@@ -10,6 +10,27 @@ Reach for this when your stack is already Go (microservices, operators, CI worke
 
 `CreateAgentParams` / `UpdateAgentParams` / `Agent` include v0.55 guardrail fields: `TxApprovalPolicy`, `TypedDataPolicy`, `SimulationFailurePolicy`, `RawSigningPolicy`, USD caps, per-recipient limits, `AllowErc4337`, `AllowEip7702`, and `AutoSuspended`. Org emergency freeze: `POST /v1/org/freeze`.
 
+## v0.56 — Safe accounts, guardrail governance, HFA
+
+```go
+// Agent on-chain accounts
+accounts, _ := client.Agents.ListAccounts(ctx, agentID)
+plan, _ := client.Agents.MigrateToSafe(ctx, agentID, oneclaw.MigrateToSafeParams{Chain: "ethereum"})
+registry, _ := client.Org.GetSafeModuleRegistry(ctx, "ethereum") // public
+report, _ := client.Org.SyncOrgSafeAllowances(ctx)
+
+// Guardrail governance
+shadow, _ := client.Org.GetGuardrailShadowReport(ctx, "", "")
+revisions, _ := client.Org.ListGuardrailRevisions(ctx)
+replay, _ := client.Agents.ReplayGuardrails(ctx, agentID, map[string]interface{}{
+    "draft_guardrails": map[string]interface{}{"tx_max_value_eth": "0.1"},
+})
+
+// Human Factor Auth
+hfa, _ := client.Auth.GetHumanFactorAuth(ctx)
+authPolicy, _ := client.Treasury.GetWalletAuthPolicy(ctx)
+```
+
 ## Install
 
 ```bash
