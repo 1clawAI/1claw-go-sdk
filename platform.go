@@ -57,8 +57,18 @@ func (s *PlatformService) DeleteApp(ctx context.Context, appID string) error {
 
 // UpsertPlatformUserRequest are parameters for provisioning or finding a user.
 type UpsertPlatformUserRequest struct {
-	Email        string `json:"email,omitempty"`
-	SubjectToken string `json:"subject_token,omitempty"`
+	Email              string `json:"email,omitempty"`
+	SubjectToken       string `json:"subject_token,omitempty"`
+	SubjectTokenType   string `json:"subject_token_type,omitempty"`
+	SiweMessage        string `json:"siwe_message,omitempty"`
+	SiweSignature      string `json:"siwe_signature,omitempty"`
+}
+
+// BootstrapUserRequest are parameters for bootstrapping a connected user.
+type BootstrapUserRequest struct {
+	TemplateID string                 `json:"template_id,omitempty"`
+	ReturnTo   string                 `json:"return_to,omitempty"`
+	Parameters map[string]interface{} `json:"parameters,omitempty"`
 }
 
 // UpsertPlatformUserResponse is the response from upserting a platform user.
@@ -87,13 +97,78 @@ type BootstrapUserResponse struct {
 }
 
 // BootstrapUser bootstraps resources for a connected user from a template.
-func (s *PlatformService) BootstrapUser(ctx context.Context, connectionID string) (*BootstrapUserResponse, error) {
+func (s *PlatformService) BootstrapUser(ctx context.Context, connectionID string, params *BootstrapUserRequest) (*BootstrapUserResponse, error) {
 	var result BootstrapUserResponse
-	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/connections/%s/bootstrap", connectionID), nil, &result)
+	body := params
+	if body == nil {
+		body = &BootstrapUserRequest{}
+	}
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/connections/%s/bootstrap", connectionID), body, &result)
 	if err != nil {
 		return nil, err
 	}
 	return &result, nil
+}
+
+// SiweChallengeResponse is returned from POST /v1/platform/siwe/challenge.
+type SiweChallengeResponse struct {
+	Nonce     string `json:"nonce"`
+	ExpiresIn int    `json:"expires_in"`
+	Domain    string `json:"domain"`
+}
+
+// SiweChallenge issues a SIWE nonce for wallet-native provisioning.
+func (s *PlatformService) SiweChallenge(ctx context.Context, domain string) (*SiweChallengeResponse, error) {
+	var result SiweChallengeResponse
+	body := map[string]string{}
+	if domain != "" {
+		body["domain"] = domain
+	}
+	err := s.client.doJSON(ctx, "POST", "/v1/platform/siwe/challenge", body, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// GetConnection returns connection details including claim and entitlement status.
+func (s *PlatformService) GetConnection(ctx context.Context, connectionID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s", connectionID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetConnectionUsage returns per-connection inference spend for the current month.
+func (s *PlatformService) GetConnectionUsage(ctx context.Context, connectionID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s/usage", connectionID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// ListEntitlements lists on-chain entitlement watches for a connection.
+func (s *PlatformService) ListEntitlements(ctx context.Context, connectionID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s/entitlements", connectionID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// PreviewTemplate resolves template placeholders without provisioning resources.
+func (s *PlatformService) PreviewTemplate(ctx context.Context, appID, templateID string, params map[string]interface{}) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/apps/%s/templates/%s/preview", appID, templateID), params, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // ListConnectedApps lists platform apps connected to the calling user.
