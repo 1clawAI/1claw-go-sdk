@@ -6,6 +6,10 @@ Built for backend services and infrastructure code written in Go. You get typed 
 
 Reach for this when your stack is already Go (microservices, operators, CI workers) and you want compile-time types instead of raw HTTP. For AI agent frameworks, use the MCP server or a language-specific integration package.
 
+## Graduated HITL (v0.54–0.55)
+
+`CreateAgentParams` / `UpdateAgentParams` / `Agent` include v0.55 guardrail fields: `TxApprovalPolicy`, `TypedDataPolicy`, `SimulationFailurePolicy`, `RawSigningPolicy`, USD caps, per-recipient limits, `AllowErc4337`, `AllowEip7702`, and `AutoSuspended`. Org emergency freeze: `POST /v1/org/freeze`.
+
 ## Install
 
 ```bash

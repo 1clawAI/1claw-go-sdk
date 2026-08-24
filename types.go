@@ -91,6 +91,20 @@ type Agent struct {
 	SolanaAtaAllowlist      []string               `json:"solana_ata_allowlist,omitempty"`
 	TxCountToday            *int64                 `json:"tx_count_today,omitempty"`
 	TxOverheadTodayByChain  map[string]string      `json:"tx_overhead_today_by_chain,omitempty"`
+	TxApprovalPolicy        map[string]interface{} `json:"tx_approval_policy,omitempty"`
+	TypedDataPolicy         string                 `json:"typed_data_policy,omitempty"`
+	SimulationFailurePolicy string                 `json:"simulation_failure_policy,omitempty"`
+	TxBlockUnlimitedApprovals bool                 `json:"tx_block_unlimited_approvals,omitempty"`
+	TxPerRecipientMaxPerDay *int                   `json:"tx_per_recipient_max_per_day,omitempty"`
+	TxPerRecipientDailyLimit string               `json:"tx_per_recipient_daily_limit,omitempty"`
+	NewRecipientCapNative   string                 `json:"new_recipient_cap_native,omitempty"`
+	TxMaxValueUsd           string                 `json:"tx_max_value_usd,omitempty"`
+	TxDailyLimitUsd         string                 `json:"tx_daily_limit_usd,omitempty"`
+	RawSigningPolicy        string                 `json:"raw_signing_policy,omitempty"`
+	PersonalSignPolicy      map[string]interface{} `json:"personal_sign_policy,omitempty"`
+	AllowErc4337            bool                   `json:"allow_erc4337,omitempty"`
+	AllowEip7702            bool                   `json:"allow_eip7702,omitempty"`
+	AutoSuspended           bool                   `json:"auto_suspended,omitempty"`
 	CreatedAt               time.Time
 	ExpiresAt               *time.Time
 	ApiKeyExpiresAt         *time.Time
@@ -141,6 +155,19 @@ type CreateAgentParams struct {
 	TxMaxPerDay             *int                   `json:"tx_max_per_day,omitempty"`
 	TxOverheadBudget        map[string]string      `json:"tx_overhead_budget,omitempty"`
 	SolanaAtaAllowlist      []string               `json:"solana_ata_allowlist,omitempty"`
+	TxApprovalPolicy        map[string]interface{} `json:"tx_approval_policy,omitempty"`
+	TypedDataPolicy         string                 `json:"typed_data_policy,omitempty"`
+	SimulationFailurePolicy string                 `json:"simulation_failure_policy,omitempty"`
+	TxBlockUnlimitedApprovals bool                 `json:"tx_block_unlimited_approvals,omitempty"`
+	TxPerRecipientMaxPerDay *int                   `json:"tx_per_recipient_max_per_day,omitempty"`
+	TxPerRecipientDailyLimit string               `json:"tx_per_recipient_daily_limit,omitempty"`
+	NewRecipientCapNative   string                 `json:"new_recipient_cap_native,omitempty"`
+	TxMaxValueUsd           string                 `json:"tx_max_value_usd,omitempty"`
+	TxDailyLimitUsd         string                 `json:"tx_daily_limit_usd,omitempty"`
+	RawSigningPolicy        string                 `json:"raw_signing_policy,omitempty"`
+	PersonalSignPolicy      map[string]interface{} `json:"personal_sign_policy,omitempty"`
+	AllowErc4337            bool                   `json:"allow_erc4337,omitempty"`
+	AllowEip7702            bool                   `json:"allow_eip7702,omitempty"`
 }
 
 // UpdateAgentParams are parameters for updating an agent.
@@ -170,6 +197,20 @@ type UpdateAgentParams struct {
 	TxOverheadBudget        map[string]string      `json:"tx_overhead_budget,omitempty"`
 	SolanaAtaAllowlist      []string               `json:"solana_ata_allowlist,omitempty"`
 	ExecutionRequireTee     *bool                  `json:"execution_require_tee,omitempty"`
+	TxApprovalPolicy        map[string]interface{} `json:"tx_approval_policy,omitempty"`
+	TypedDataPolicy         *string                `json:"typed_data_policy,omitempty"`
+	SimulationFailurePolicy *string                `json:"simulation_failure_policy,omitempty"`
+	TxBlockUnlimitedApprovals *bool                `json:"tx_block_unlimited_approvals,omitempty"`
+	TxPerRecipientMaxPerDay *int                   `json:"tx_per_recipient_max_per_day,omitempty"`
+	TxPerRecipientDailyLimit *string               `json:"tx_per_recipient_daily_limit,omitempty"`
+	NewRecipientCapNative   *string                `json:"new_recipient_cap_native,omitempty"`
+	TxMaxValueUsd           *string                `json:"tx_max_value_usd,omitempty"`
+	TxDailyLimitUsd         *string                `json:"tx_daily_limit_usd,omitempty"`
+	RawSigningPolicy        *string                `json:"raw_signing_policy,omitempty"`
+	PersonalSignPolicy      map[string]interface{} `json:"personal_sign_policy,omitempty"`
+	AllowErc4337            *bool                  `json:"allow_erc4337,omitempty"`
+	AllowEip7702            *bool                  `json:"allow_eip7702,omitempty"`
+	ClearAutoSuspended      *bool                  `json:"clear_auto_suspended,omitempty"`
 }
 
 // --- API Key types ---
