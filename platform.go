@@ -50,9 +50,99 @@ func (s *PlatformService) UpdateApp(ctx context.Context, appID string, params Up
 	return &result, nil
 }
 
-// DeleteApp deletes a platform app.
-func (s *PlatformService) DeleteApp(ctx context.Context, appID string) error {
-	return s.client.doJSON(ctx, "DELETE", fmt.Sprintf("/v1/platform/apps/%s", appID), nil, nil)
+// DeleteApp soft-deletes a platform app and releases its slug.
+func (s *PlatformService) DeleteApp(ctx context.Context, appID string) (*PlatformAppDeleteResponse, error) {
+	var result PlatformAppDeleteResponse
+	err := s.client.doJSON(ctx, "DELETE", fmt.Sprintf("/v1/platform/apps/%s", appID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// PlatformAppDeleteResponse is returned when a platform app is soft-deleted.
+type PlatformAppDeleteResponse struct {
+	ID           string `json:"id"`
+	Slug         string `json:"slug"`
+	DeletedAt    string `json:"deleted_at"`
+	SlugReleased bool   `json:"slug_released"`
+}
+
+// TransferAppOwnershipRequest moves a platform app to another org.
+type TransferAppOwnershipRequest struct {
+	TargetOrgID       string `json:"target_org_id,omitempty"`
+	TargetUserEmail   string `json:"target_user_email,omitempty"`
+}
+
+// TransferAppOwnershipResponse confirms an ownership transfer.
+type TransferAppOwnershipResponse struct {
+	AppID        string `json:"app_id"`
+	FormerOrgID  string `json:"former_org_id"`
+	NewOrgID     string `json:"new_org_id"`
+}
+
+// TransferAppOwnership moves a platform app to another organization (step-up required).
+func (s *PlatformService) TransferAppOwnership(ctx context.Context, appID string, params TransferAppOwnershipRequest, confirmToken string) (*TransferAppOwnershipResponse, error) {
+	var result TransferAppOwnershipResponse
+	headers := map[string]string{}
+	if confirmToken != "" {
+		headers["X-Auth-Confirm"] = confirmToken
+	}
+	err := s.client.doJSONWithHeaders(ctx, "POST", fmt.Sprintf("/v1/platform/apps/%s/transfer-ownership", appID), params, &result, headers)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// GetSpendPolicy returns a spend policy by ID.
+func (s *PlatformService) GetSpendPolicy(ctx context.Context, appID, policyID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/apps/%s/spend-policies/%s", appID, policyID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetConnectionSpendPolicy returns the effective spend policy for a connection.
+func (s *PlatformService) GetConnectionSpendPolicy(ctx context.Context, connectionID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s/spend-policy", connectionID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// ListConnectionApprovals lists approvals for a connected user (plt_ auth).
+func (s *PlatformService) ListConnectionApprovals(ctx context.Context, connectionID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s/approvals", connectionID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetConnectionApproval returns a single approval for a connection.
+func (s *PlatformService) GetConnectionApproval(ctx context.Context, connectionID, approvalID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s/approvals/%s", connectionID, approvalID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// ListConnectionPendingApprovals lists consensus pending approvals for a connection.
+func (s *PlatformService) ListConnectionPendingApprovals(ctx context.Context, connectionID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s/pending-approvals", connectionID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // UpsertPlatformUserRequest are parameters for provisioning or finding a user.
