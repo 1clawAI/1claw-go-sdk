@@ -193,6 +193,25 @@ stats, _ := client.Platform.GetAppStats(ctx, appID)
 
 // Rotate webhook signing secret (returns new secret once)
 secret, _ := client.Platform.RotateWebhookSecret(ctx, appID)
+
+// Platform expansion (v0.57+)
+challenge, _ := client.Platform.SiweChallenge(ctx, nil)
+conn, _ := client.Platform.GetConnection(ctx, connectionID)
+usage, _ := client.Platform.GetConnectionUsage(ctx, connectionID)
+entitlements, _ := client.Platform.ListEntitlements(ctx, connectionID)
+preview, _ := client.Platform.PreviewTemplate(ctx, appID, templateID, &oneclaw.PreviewTemplateParams{
+    Parameters: map[string]interface{}{"agent_name": "demo"},
+})
+
+// Platform control plane (v0.58+)
+_, _ = client.Platform.TransferAppOwnership(ctx, appID, oneclaw.TransferAppOwnershipRequest{
+    TargetOrgID: targetOrgID,
+}, confirmToken)
+policy, _ := client.Platform.GetSpendPolicy(ctx, appID, policyID)
+connPolicy, _ := client.Platform.GetConnectionSpendPolicy(ctx, connectionID)
+approvals, _ := client.Platform.ListConnectionApprovals(ctx, connectionID)
+approval, _ := client.Platform.GetConnectionApproval(ctx, connectionID, approvalID)
+pending, _ := client.Platform.ListConnectionPendingApprovals(ctx, connectionID)
 ```
 
 ## DPoP (Proof-of-Possession)
