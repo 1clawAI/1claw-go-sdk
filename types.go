@@ -906,19 +906,20 @@ type ExecutionEventList struct {
 
 // Automation represents a scheduled / event / webhook automation.
 type Automation struct {
-	ID           string                 `json:"id"`
-	AgentID      string                 `json:"agent_id"`
-	Name         string                 `json:"name"`
-	TriggerType  string                 `json:"trigger_type"`
-	CronExpr     *string                `json:"cron_expr,omitempty"`
-	Timezone     string                 `json:"timezone"`
-	EventFilter  map[string]interface{} `json:"event_filter,omitempty"`
-	WorkflowSpec interface{}            `json:"workflow_spec"`
-	IsActive     bool                   `json:"is_active"`
-	LastRunAt    *string                `json:"last_run_at,omitempty"`
-	NextRunAt    *string                `json:"next_run_at,omitempty"`
-	CreatedAt    string                 `json:"created_at"`
-	UpdatedAt    string                 `json:"updated_at"`
+	ID            string                 `json:"id"`
+	AgentID       string                 `json:"agent_id"`
+	Name          string                 `json:"name"`
+	TriggerType   string                 `json:"trigger_type"`
+	CronExpr      *string                `json:"cron_expr,omitempty"`
+	Timezone      string                 `json:"timezone"`
+	EventFilter   map[string]interface{} `json:"event_filter,omitempty"`
+	WorkflowSpec  interface{}            `json:"workflow_spec"`
+	IsActive      bool                   `json:"is_active"`
+	LastRunAt     *string                `json:"last_run_at,omitempty"`
+	NextRunAt     *string                `json:"next_run_at,omitempty"`
+	CreatedByType *string                `json:"created_by_type,omitempty"`
+	CreatedAt     string                 `json:"created_at"`
+	UpdatedAt     string                 `json:"updated_at"`
 }
 
 // AutomationList is the response from listing automations.
@@ -936,6 +937,14 @@ type CreateAutomationParams struct {
 	Timezone     string                 `json:"timezone,omitempty"`
 	EventFilter  map[string]interface{} `json:"event_filter,omitempty"`
 	WorkflowSpec interface{}            `json:"workflow_spec"`
+}
+
+// AgentCreateAutomationParams are parameters for agent-scoped automation create.
+type AgentCreateAutomationParams struct {
+	Name         string      `json:"name"`
+	TriggerType  string      `json:"trigger_type,omitempty"`
+	WorkflowSpec interface{} `json:"workflow_spec"`
+	AutoTrigger  bool        `json:"auto_trigger,omitempty"`
 }
 
 // UpdateAutomationParams are parameters for updating an automation.

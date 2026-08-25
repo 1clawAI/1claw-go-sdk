@@ -2,6 +2,7 @@ package oneclaw
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 )
 
@@ -173,4 +174,26 @@ func (s *AgentsService) ImportSmartAccount(ctx context.Context, agentID string, 
 	var resp map[string]interface{}
 	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/agents/%s/smart-accounts/import", agentID), req, &resp)
 	return resp, err
+}
+
+// CreateAutomation creates a simple manual/webhook automation for the calling agent.
+func (s *AgentsService) CreateAutomation(ctx context.Context, agentID string, params AgentCreateAutomationParams) (*Automation, error) {
+	var raw json.RawMessage
+	if err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/agents/%s/automations", agentID), params, &raw); err != nil {
+		return nil, err
+	}
+	var wrapped struct {
+		Automation Automation `json:"automation"`
+	}
+	if err := json.Unmarshal(raw, &wrapped); err != nil {
+		return nil, err
+	}
+	if wrapped.Automation.ID != "" {
+		return &wrapped.Automation, nil
+	}
+	var direct Automation
+	if err := json.Unmarshal(raw, &direct); err != nil {
+		return nil, err
+	}
+	return &direct, nil
 }
