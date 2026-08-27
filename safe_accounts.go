@@ -158,3 +158,49 @@ func (s *OrgService) ListGuardrailRevisions(ctx context.Context) (map[string]int
 	err := s.client.doJSON(ctx, "GET", "/v1/org/guardrail-revisions", nil, &resp)
 	return resp, err
 }
+
+// OnboardingStatus tracks welcome bundle and MCP readiness.
+type OnboardingStatus struct {
+	HasVault              bool   `json:"has_vault"`
+	HasAgent              bool   `json:"has_agent"`
+	HasPolicy             bool   `json:"has_policy"`
+	HasSampleSecret       bool   `json:"has_sample_secret"`
+	FirstSecretRead       bool   `json:"first_secret_read"`
+	WelcomeBundleComplete bool   `json:"welcome_bundle_complete"`
+	DefaultVaultID        string `json:"default_vault_id,omitempty"`
+}
+
+// OnboardingProvisionRequest configures MCP onboarding provision.
+type OnboardingProvisionRequest struct {
+	AgentName string `json:"agent_name,omitempty"`
+	Client    string `json:"client,omitempty"`
+}
+
+// OnboardingProvisionResponse is returned by POST /v1/onboarding/provision.
+type OnboardingProvisionResponse struct {
+	AgentID        string                 `json:"agent_id"`
+	APIKey         string                 `json:"api_key"`
+	VaultID        string                 `json:"vault_id"`
+	McpStdioConfig map[string]interface{} `json:"mcp_stdio_config"`
+	VerifyPrompt   string                 `json:"verify_prompt"`
+}
+
+// GetOnboardingStatus returns org onboarding progress (human-only).
+func (s *OrgService) GetOnboardingStatus(ctx context.Context) (*OnboardingStatus, error) {
+	var resp OnboardingStatus
+	err := s.client.doJSON(ctx, "GET", "/v1/org/onboarding/status", nil, &resp)
+	return &resp, err
+}
+
+// ProvisionOnboarding creates welcome vault, sample secret, agent, and default policy.
+func (s *OrgService) ProvisionOnboarding(ctx context.Context, params *OnboardingProvisionRequest) (*OnboardingProvisionResponse, error) {
+	var body interface{}
+	if params != nil {
+		body = params
+	} else {
+		body = map[string]interface{}{}
+	}
+	var resp OnboardingProvisionResponse
+	err := s.client.doJSON(ctx, "POST", "/v1/onboarding/provision", body, &resp)
+	return &resp, err
+}
