@@ -212,7 +212,11 @@ connPolicy, _ := client.Platform.GetConnectionSpendPolicy(ctx, connectionID)
 approvals, _ := client.Platform.ListConnectionApprovals(ctx, connectionID)
 approval, _ := client.Platform.GetConnectionApproval(ctx, connectionID, approvalID)
 pending, _ := client.Platform.ListConnectionPendingApprovals(ctx, connectionID)
+_, _ = client.Platform.GetConnectionRuntime(ctx, connectionID, runtimeID)
+_, _ = client.Platform.ConnectionPasskeyEnrollBegin(ctx, connectionID)
 ```
+
+**v0.59.4 connection endpoints** (`portfolio`, `pending-approvals` create, connection-scoped `automations`/`memory`, `inspect-content`) are in the OpenAPI spec and TypeScript/Python SDKs; Go client methods are pending — call the REST API directly until the next Go SDK release.
 
 ## DPoP (Proof-of-Possession)
 
