@@ -326,3 +326,23 @@ func (s *PlatformService) RotateWebhookSecret(ctx context.Context, appID string)
 	}
 	return &result, nil
 }
+
+// GetConnectionRuntime returns a runtime provisioned on a connection (plt_ auth).
+func (s *PlatformService) GetConnectionRuntime(ctx context.Context, connectionID, runtimeID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/connections/%s/runtimes/%s", connectionID, runtimeID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// ConnectionPasskeyEnrollBegin starts WebAuthn registration for a connected end-user (plt_ auth).
+func (s *PlatformService) ConnectionPasskeyEnrollBegin(ctx context.Context, connectionID string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/connections/%s/passkeys/enroll/begin", connectionID), map[string]interface{}{}, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
