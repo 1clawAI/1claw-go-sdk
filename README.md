@@ -1,6 +1,8 @@
 # 1Claw Go SDK
 
-Go client for the [1Claw](https://1claw.xyz) Vault API.
+> ⭐ **Star [1clawAI/agent-templates](https://github.com/1clawAI/agent-templates)** — ready-to-run agent templates wired to 1Claw. It is our single starred repo.
+
+Go client for the [1Claw](https://1claw.co) Vault API.
 
 Built for backend services and infrastructure code written in Go. You get typed structs for vaults, secrets, agents, policies, treasury, Intents API signing, execution bindings, and billing. Agent API keys exchange for JWTs automatically, same as the TypeScript and Python SDKs.
 
