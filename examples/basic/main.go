@@ -13,7 +13,7 @@ import (
 func main() {
 	// Option 1: API key (auto-exchanges for JWT on first call)
 	client, err := oneclaw.New(
-		oneclaw.WithBaseURL("https://api.1claw.xyz"),
+		oneclaw.WithBaseURL("https://api.1claw.co"),
 		oneclaw.WithAPIKey(os.Getenv("1CLAW_API_KEY")),
 	)
 	if err != nil {
@@ -34,7 +34,7 @@ func main() {
 
 	// Option 2: Pre-obtained JWT
 	tokenClient, _ := oneclaw.New(
-		oneclaw.WithBaseURL("https://api.1claw.xyz"),
+		oneclaw.WithBaseURL("https://api.1claw.co"),
 		oneclaw.WithToken(os.Getenv("1CLAW_TOKEN")),
 	)
 	_ = tokenClient

@@ -222,7 +222,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, body any, resu
 
 // doJSONPublic performs unauthenticated JSON HTTP requests (public endpoints).
 func (c *Client) doJSONPublic(ctx context.Context, method, path string, body any, result any) error {
-	baseURL := "https://api.1claw.xyz"
+	baseURL := "https://api.1claw.co"
 	if len(c.api.GetConfig().Servers) > 0 {
 		baseURL = c.api.GetConfig().Servers[0].URL
 	}
@@ -267,7 +267,7 @@ func (c *Client) doJSONWithHeaders(ctx context.Context, method, path string, bod
 		return err
 	}
 
-	baseURL := "https://api.1claw.xyz"
+	baseURL := "https://api.1claw.co"
 	if len(c.api.GetConfig().Servers) > 0 {
 		baseURL = c.api.GetConfig().Servers[0].URL
 	}

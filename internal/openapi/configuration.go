@@ -98,7 +98,7 @@ func NewConfiguration() *Configuration {
 				Description: "Development",
 			},
 			{
-				URL: "https://api.1claw.xyz",
+				URL: "https://api.1claw.co",
 				Description: "Production",
 			},
 			{
