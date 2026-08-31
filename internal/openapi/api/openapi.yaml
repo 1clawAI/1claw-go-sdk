@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   contact:
-    email: ops@1claw.xyz
+    email: ops@1claw.co
   description: |
     Secure secret management for AI agents. Provides vaults, secrets,
     policy-based access control, agent identity, Intents API,
@@ -15,9 +15,9 @@ servers:
 - description: Development
   url: http://localhost:8443
 - description: Production
-  url: https://api.1claw.xyz
+  url: https://api.1claw.co
 - description: Shroud TEE Proxy (Intents API + LLM proxy)
-  url: https://shroud.1claw.xyz
+  url: https://shroud.1claw.co
 security:
 - BearerAuth: []
 tags:
@@ -6773,4 +6773,4 @@ components:
       scheme: bearer
       type: http
 x-agentcash-guidance:
-  llmsTxtUrl: https://1claw.xyz/llms.txt
+  llmsTxtUrl: https://1claw.co/llms.txt

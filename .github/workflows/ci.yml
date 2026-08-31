@@ -14,7 +14,13 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          # Read the version from go.mod rather than pinning one here: the
+          # pin said 1.21 while go.mod required 1.22, so CI could not build
+          # the module at all and had been red since 2026-08-10.
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
 
       - name: Build
         run: go build ./...

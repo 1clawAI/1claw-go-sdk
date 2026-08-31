@@ -13,7 +13,7 @@ import (
 
 func main() {
 	client, err := oneclaw.New(
-		oneclaw.WithBaseURL("https://api.1claw.xyz"),
+		oneclaw.WithBaseURL("https://api.1claw.co"),
 		oneclaw.WithAPIKey(os.Getenv("1CLAW_API_KEY")),
 	)
 	if err != nil {
