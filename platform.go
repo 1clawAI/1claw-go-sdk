@@ -3,6 +3,8 @@ package oneclaw
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strconv"
 )
 
 // PlatformService handles Platform API operations.
@@ -345,4 +347,176 @@ func (s *PlatformService) ConnectionPasskeyEnrollBegin(ctx context.Context, conn
 		return nil, err
 	}
 	return result, nil
+}
+
+// ── Fleets ──────────────────────────────────────────────────────────────
+//
+// A fleet is every agent one bootstrap template provisioned. Each call below
+// acts on all of them at once, which is why the surface is narrower than the
+// per-agent API rather than wider: guardrails and capability flags are not
+// bulk-patchable, and one bad field refuses the whole patch.
+
+// FleetVersionBucket is how many agents were provisioned from one template version.
+type FleetVersionBucket struct {
+	TemplateVersion *int  `json:"template_version"`
+	Agents          int64 `json:"agents"`
+}
+
+// FleetSummary describes a template's cohort.
+type FleetSummary struct {
+	TemplateID   string `json:"template_id"`
+	TemplateName string `json:"template_name"`
+	// CurrentVersion is the template's version; agents provisioned from an
+	// earlier one are behind.
+	CurrentVersion int `json:"current_version"`
+	// SpecHash distinguishes a version bump that changed nothing from one that
+	// did. Empty on templates written before migration 245.
+	SpecHash               string               `json:"spec_hash,omitempty"`
+	TotalAgents            int64                `json:"total_agents"`
+	VersionSkew            []FleetVersionBucket `json:"version_skew"`
+	AgentsOnCurrentVersion int64                `json:"agents_on_current_version"`
+	AgentsBehind           int64                `json:"agents_behind"`
+	// DriftedAgents were changed outside fleet control; a rollout skips them.
+	DriftedAgents int64 `json:"drifted_agents"`
+	// BulkPatchableFields is the authoritative allowlist. Read it from here
+	// rather than hard-coding it: it excludes guardrails and capability flags,
+	// and may narrow further.
+	BulkPatchableFields []string `json:"bulk_patchable_fields"`
+}
+
+// FleetAgent is one member of a cohort.
+type FleetAgent struct {
+	AgentID                string `json:"agent_id"`
+	Name                   string `json:"name"`
+	OrgID                  string `json:"org_id"`
+	PlatformConnectionID   string `json:"platform_connection_id,omitempty"`
+	ProvisionedFromVersion *int   `json:"provisioned_from_version"`
+	LastFleetSyncAt        string `json:"last_fleet_sync_at,omitempty"`
+	// DriftFields are the fields a rollout skipped because a human changed them.
+	DriftFields []string `json:"drift_fields"`
+	IsActive    bool     `json:"is_active"`
+	IsCurrent   bool     `json:"is_current"`
+}
+
+// ListFleetAgentsResponse is a page of a fleet's agents.
+type ListFleetAgentsResponse struct {
+	Agents         []FleetAgent `json:"agents"`
+	Limit          int64        `json:"limit"`
+	Offset         int64        `json:"offset"`
+	CurrentVersion int          `json:"current_version"`
+}
+
+// BulkPatchFleetResponse reports what a bulk patch touched.
+type BulkPatchFleetResponse struct {
+	FieldsApplied []string `json:"fields_applied"`
+	AgentsMatched int64    `json:"agents_matched"`
+	AgentsUpdated int64    `json:"agents_updated"`
+}
+
+// FleetRolloutOutcome is what a rollout decided about one agent. Outcome is one
+// of "already_current", "synced", or "skipped_drifted".
+type FleetRolloutOutcome struct {
+	Outcome     string   `json:"outcome"`
+	AgentID     string   `json:"agent_id"`
+	Fields      []string `json:"fields,omitempty"`
+	DriftFields []string `json:"drift_fields,omitempty"`
+}
+
+// FleetRolloutRequest controls a rollout.
+type FleetRolloutRequest struct {
+	// Force overwrites hand edits. It still cannot carry a guardrail.
+	Force bool `json:"force"`
+	// DryRun reports the plan without applying it, and claims no job.
+	DryRun bool `json:"dry_run"`
+}
+
+// FleetRolloutResponse is the result of a rollout.
+type FleetRolloutResponse struct {
+	// JobID is empty for a dry run, which claims no job.
+	JobID          string                `json:"job_id,omitempty"`
+	ToVersion      int                   `json:"to_version"`
+	DryRun         bool                  `json:"dry_run"`
+	Forced         bool                  `json:"forced"`
+	TotalAgents    int64                 `json:"total_agents"`
+	Synced         int                   `json:"synced"`
+	AlreadyCurrent int                   `json:"already_current"`
+	SkippedDrifted int                   `json:"skipped_drifted"`
+	Outcomes       []FleetRolloutOutcome `json:"outcomes"`
+}
+
+// PauseFleetResponse reports how many agents were deactivated.
+type PauseFleetResponse struct {
+	AgentsPaused int64 `json:"agents_paused"`
+}
+
+// GetFleet returns a template's cohort: size, version skew, and drift.
+func (s *PlatformService) GetFleet(ctx context.Context, appID, templateID string) (*FleetSummary, error) {
+	var result FleetSummary
+	err := s.client.doJSON(ctx, "GET", fmt.Sprintf("/v1/platform/apps/%s/fleets/%s", appID, templateID), nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ListFleetAgents lists the agents in a fleet. Pass limit/offset <= 0 to omit them.
+func (s *PlatformService) ListFleetAgents(ctx context.Context, appID, templateID string, limit, offset int) (*ListFleetAgentsResponse, error) {
+	path := fmt.Sprintf("/v1/platform/apps/%s/fleets/%s/agents", appID, templateID)
+	q := url.Values{}
+	if limit > 0 {
+		q.Set("limit", strconv.Itoa(limit))
+	}
+	if offset > 0 {
+		q.Set("offset", strconv.Itoa(offset))
+	}
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	var result ListFleetAgentsResponse
+	if err := s.client.doJSON(ctx, "GET", path, nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// BulkPatchFleet applies one patch to every agent in the cohort.
+//
+// Guardrails and capability flags (intents_api_enabled,
+// execution_intents_enabled) are refused with a 400 naming the field, and one
+// bad field refuses the whole patch rather than applying it in part. Read the
+// current allowlist from GetFleet().BulkPatchableFields.
+func (s *PlatformService) BulkPatchFleet(ctx context.Context, appID, templateID string, patch map[string]interface{}) (*BulkPatchFleetResponse, error) {
+	body := map[string]interface{}{"patch": patch}
+	var result BulkPatchFleetResponse
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/apps/%s/fleets/%s/bulk-patch", appID, templateID), body, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// RolloutFleet brings the cohort up to the template's current version.
+//
+// An agent changed outside fleet control is skipped rather than corrected.
+// Force overrides that but still cannot carry a guardrail. DryRun reports the
+// plan, claims no job (JobID comes back empty), and so never blocks the real
+// rollout that follows it. Only one rollout runs per template at a time; a
+// second returns 409.
+func (s *PlatformService) RolloutFleet(ctx context.Context, appID, templateID string, params FleetRolloutRequest) (*FleetRolloutResponse, error) {
+	var result FleetRolloutResponse
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/apps/%s/fleets/%s/rollout", appID, templateID), params, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// PauseFleet deactivates every agent in the cohort.
+func (s *PlatformService) PauseFleet(ctx context.Context, appID, templateID string) (*PauseFleetResponse, error) {
+	var result PauseFleetResponse
+	err := s.client.doJSON(ctx, "POST", fmt.Sprintf("/v1/platform/apps/%s/fleets/%s/pause", appID, templateID), map[string]interface{}{}, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
